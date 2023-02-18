@@ -1,8 +1,8 @@
 
 build-all:
-	cd checkout && make build
-	cd loms && make build
-	cd notifications && make build
+	cd checkout && GOOS=linux make build
+	cd loms && GOOS=linux make build
+	cd notifications && GOOS=linux make build
 
 run-all: build-all
 	sudo docker compose up --force-recreate --build
