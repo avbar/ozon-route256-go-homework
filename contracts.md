@@ -165,7 +165,7 @@ Response
 }
 ```
 
-## puchase
+## purchase
 
 Оформить заказ по всем товарам корзины. Вызывает createOrder у LOMS.
 
