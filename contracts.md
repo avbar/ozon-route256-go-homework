@@ -178,7 +178,9 @@ Request
 
 Response
 ```
-{}
+{
+    orderID int64
+}
 ```
 
 # Notifications
