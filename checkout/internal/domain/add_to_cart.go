@@ -6,11 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Stock struct {
-	WarehouseID int64
-	Count       uint64
-}
-
 var (
 	ErrInsufficientStocks = errors.New("insufficient stocks")
 )

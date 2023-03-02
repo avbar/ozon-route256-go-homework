@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package route256.checkout_v1;
+
+option go_package="route256/checkout/pkg/checkout_v1;checkout_v1";
+
+import "google/protobuf/empty.proto";
+
+service Checkout {
+    // Добавить товар в корзину определенного пользователя
+    rpc AddToCart(AddToCartRequest) returns (google.protobuf.Empty);
+    // Удалить товар из корзины определенного пользователя
+    rpc DeleteFromCart(DeleteFromCartRequest) returns (google.protobuf.Empty);
+    // Показать список товаров в корзине с именами и ценами
+    rpc ListCart(ListCartRequest) returns (ListCartResponse);
+    // Оформить заказ по всем товарам корзины
+    rpc Purchase(PurchaseRequest) returns (PurchaseResponse);
+}
+
+message AddToCartRequest {
+    int64 user = 1;
+    uint32 sku = 2;
+    uint32 count = 3;
+}
+
+message DeleteFromCartRequest {
+    int64 user = 1;
+    uint32 sku = 2;
+    uint32 count = 3;
+}
+
+message ListCartRequest {
+    int64 user = 1;
+}
+
+message CartItem {
+    uint32 sku = 1;
+    uint32 count = 2;
+    string name = 3;
+    uint32 price = 4;
+}
+
+message ListCartResponse {
+    repeated CartItem items = 1;
+    uint32 total_price = 2;
+}
+
+message PurchaseRequest {
+    int64 user = 1;
+}
+
+message PurchaseResponse {
+    int64 order_id = 1;
+}

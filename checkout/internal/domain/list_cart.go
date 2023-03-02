@@ -7,18 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CartItem struct {
-	SKU   uint32
-	Count uint16
-	Name  string
-	Price uint32
-}
-
-type Cart struct {
-	Items      []CartItem
-	TotalPrice uint32
-}
-
 func (m *Model) ListCart(ctx context.Context, user int64) (Cart, error) {
 	token := config.ConfigData.Token
 	var skus = []uint32{
@@ -27,7 +15,6 @@ func (m *Model) ListCart(ctx context.Context, user int64) (Cart, error) {
 		6967749,
 	}
 
-	var cartItems []CartItem
 	var cart Cart
 
 	for _, sku := range skus {
@@ -36,7 +23,7 @@ func (m *Model) ListCart(ctx context.Context, user int64) (Cart, error) {
 			return cart, errors.WithMessage(err, "listing cart")
 		}
 
-		cartItems = append(cartItems,
+		cart.Items = append(cart.Items,
 			CartItem{
 				SKU:   sku,
 				Count: 1,
@@ -44,11 +31,7 @@ func (m *Model) ListCart(ctx context.Context, user int64) (Cart, error) {
 				Price: product.Price,
 			},
 		)
-	}
-
-	for _, cartItem := range cartItems {
-		cart.Items = append(cart.Items, cartItem)
-		cart.TotalPrice += cartItem.Price
+		cart.TotalPrice += product.Price
 	}
 
 	return cart, nil

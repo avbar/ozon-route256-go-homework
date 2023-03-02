@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option go_package="route256/product-service/pkg/product";
+package route256.product;
+
+service ProductService {
+    rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+    rpc ListSkus(ListSkusRequest) returns (ListSkusResponse);
+}
+
+message GetProductRequest {
+    string token = 1;
+    uint32 sku = 2;
+}
+
+message GetProductResponse {
+    string name = 1;
+    uint32 price = 2;
+}
+
+message ListSkusRequest {
+    string token = 1;
+    uint32 start_after_sku = 2;
+    uint32 count = 3;
+}
+
+message ListSkusResponse {
+    repeated uint32 skus = 1;
+}
