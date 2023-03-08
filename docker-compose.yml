@@ -4,12 +4,12 @@ services:
     image: checkout
     build: ./checkout/
     ports:
-      - "8080:8080"
+      - "50050:50050"
   loms:
     image: loms
     build: ./loms/
     ports:
-      - "8081:8081"
+      - "50051:50051"
   # notification:
   #   image: notification
   #   build: ./notification

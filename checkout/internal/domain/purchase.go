@@ -6,13 +6,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type OrderItem struct {
-	SKU   uint32
-	Count uint16
-}
-
-type OrderID int64
-
 func (m *Model) Purchase(ctx context.Context, user int64) (OrderID, error) {
 	var orderItems = []OrderItem{
 		{
