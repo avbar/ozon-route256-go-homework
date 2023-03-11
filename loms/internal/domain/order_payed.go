@@ -5,5 +5,10 @@ import (
 )
 
 func (m *Model) OrderPayed(ctx context.Context, orderID OrderID) error {
-	return nil
+	err := m.lomsRepository.DeleteReserve(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	return m.lomsRepository.ChangeStatus(ctx, orderID, OrderStatusPayed)
 }

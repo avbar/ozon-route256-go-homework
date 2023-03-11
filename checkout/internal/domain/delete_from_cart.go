@@ -5,5 +5,5 @@ import (
 )
 
 func (m *Model) DeleteFromCart(ctx context.Context, user int64, sku uint32, count uint16) error {
-	return nil
+	return m.checkoutRepository.DeleteFromCart(ctx, user, sku, count)
 }

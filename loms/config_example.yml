@@ -1,0 +1,2 @@
+grpc_port: 50051
+database_url: "postgres://user:password@postgres_loms:5432/loms?sslmode=disable"

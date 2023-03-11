@@ -5,12 +5,17 @@ import "context"
 type CartItem struct {
 	SKU   uint32
 	Count uint16
+}
+
+type CartItemDetail struct {
+	SKU   uint32
+	Count uint16
 	Name  string
 	Price uint32
 }
 
 type Cart struct {
-	Items      []CartItem
+	Items      []CartItemDetail
 	TotalPrice uint32
 }
 
@@ -41,13 +46,27 @@ type ProductClient interface {
 }
 
 type Model struct {
-	lomsClient    LOMSClient
-	productClient ProductClient
+	lomsClient         LOMSClient
+	productClient      ProductClient
+	checkoutRepository CheckoutRepository
+	transactionManager TransactionManager
 }
 
-func New(lomsClient LOMSClient, productClient ProductClient) *Model {
+func New(lomsClient LOMSClient, productClient ProductClient, checkoutRepository CheckoutRepository, transactionManager TransactionManager) *Model {
 	return &Model{
-		lomsClient:    lomsClient,
-		productClient: productClient,
+		lomsClient:         lomsClient,
+		productClient:      productClient,
+		checkoutRepository: checkoutRepository,
+		transactionManager: transactionManager,
 	}
+}
+
+type CheckoutRepository interface {
+	AddToCart(ctx context.Context, user int64, sku uint32, count uint16) error
+	DeleteFromCart(ctx context.Context, user int64, sku uint32, count uint16) error
+	ListCart(ctx context.Context, user int64) ([]CartItem, error)
+}
+
+type TransactionManager interface {
+	RunRepeatableRead(ctx context.Context, f func(ctxTX context.Context) error) error
 }

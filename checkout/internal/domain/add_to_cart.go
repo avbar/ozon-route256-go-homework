@@ -20,7 +20,7 @@ func (m *Model) AddToCart(ctx context.Context, user int64, sku uint32, count uin
 	for _, stock := range stocks {
 		counter -= int64(stock.Count)
 		if counter <= 0 {
-			return nil
+			return m.checkoutRepository.AddToCart(ctx, user, sku, count)
 		}
 	}
 
