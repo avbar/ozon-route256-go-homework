@@ -60,6 +60,43 @@ services:
     networks:
       - net
 
+  # poolers
+  pgbouncer_checkout:
+    image: edoburu/pgbouncer
+    environment:
+       - DB_USER=user
+       - DB_PASSWORD=password
+       - DB_HOST=postgres_checkout
+       - DB_NAME=checkout
+       - POOL_MODE=session
+       - ADMIN_USERS=user
+       - AUTH_TYPE=plain
+    container_name: 'pgbouncer_checkout'
+    ports:
+      - "6432:5432"
+    depends_on:
+      - postgres_checkout
+    networks:
+      - net
+
+  pgbouncer_loms:
+    image: edoburu/pgbouncer
+    environment:
+       - DB_USER=user
+       - DB_PASSWORD=password
+       - DB_HOST=postgres_loms
+       - DB_NAME=loms
+       - POOL_MODE=session
+       - ADMIN_USERS=user
+       - AUTH_TYPE=plain
+    container_name: 'pgbouncer_loms'
+    ports:
+      - "6433:5432"
+    depends_on:
+      - postgres_loms
+    networks:
+      - net
+
   # services
   checkout:
     image: checkout
@@ -67,9 +104,9 @@ services:
     ports:
       - "50050:50050"
     environment:
-      DATABASE_URL: postgres://user:password@postgres_checkout:5432/checkout?sslmode=disable
+      DATABASE_URL: postgres://user:password@pgbouncer_checkout:5432/checkout?sslmode=disable&statement_cache_mode=describe
     depends_on:
-      - postgres_checkout
+      - pgbouncer_checkout
     networks:
       - net
 
@@ -79,9 +116,9 @@ services:
     ports:
       - "50051:50051"
     environment:
-      DATABASE_URL: postgres://user:password@postgres_loms:5432/loms?sslmode=disable
+      DATABASE_URL: postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable&statement_cache_mode=describe
     depends_on:
-      - postgres_loms
+      - pgbouncer_loms
     networks:
       - net
 

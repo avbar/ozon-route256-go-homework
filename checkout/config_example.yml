@@ -3,4 +3,4 @@ services:
   loms: "loms:50051"
   productservice: "route256.pavl.uk:8082"
 grpc_port: 50050
-database_url: "postgres://user:password@postgres_checkout:5432/checkout?sslmode=disable"
+database_url: "postgres://user:password@pgbouncer_checkout:5432/checkout?sslmode=disable"
