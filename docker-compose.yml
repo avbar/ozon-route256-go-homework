@@ -1,15 +1,127 @@
 version: "3.1"
+
+networks:
+  net:
+    driver: bridge
+
 services:
+  # databases
+  postgres_checkout:
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: checkout
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: 'postgres-checkout'
+    volumes:
+      - ./checkout:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d checkout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - net
+
+  postgres_loms:
+    image: postgres:15.1
+    environment:
+      POSTGRES_DB: loms
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    container_name: 'postgres-loms'
+    volumes:
+      - ./loms:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d loms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - net
+
+  # poolers
+  pgbouncer_checkout:
+    image: edoburu/pgbouncer
+    environment:
+       - DB_USER=user
+       - DB_PASSWORD=password
+       - DB_HOST=postgres_checkout
+       - DB_NAME=checkout
+       - POOL_MODE=session
+       - ADMIN_USERS=user
+       - AUTH_TYPE=plain
+    container_name: 'pgbouncer_checkout'
+    ports:
+      - "6432:5432"
+    depends_on:
+      - postgres_checkout
+    networks:
+      - net
+
+  pgbouncer_loms:
+    image: edoburu/pgbouncer
+    environment:
+       - DB_USER=user
+       - DB_PASSWORD=password
+       - DB_HOST=postgres_loms
+       - DB_NAME=loms
+       - POOL_MODE=session
+       - ADMIN_USERS=user
+       - AUTH_TYPE=plain
+    container_name: 'pgbouncer_loms'
+    ports:
+      - "6433:5432"
+    depends_on:
+      - postgres_loms
+    networks:
+      - net
+
+  # services
   checkout:
     image: checkout
     build: ./checkout/
     ports:
       - "50050:50050"
+    environment:
+      DATABASE_URL: postgres://user:password@pgbouncer_checkout:5432/checkout?sslmode=disable&statement_cache_mode=describe
+    depends_on:
+      - pgbouncer_checkout
+    networks:
+      - net
+
   loms:
     image: loms
     build: ./loms/
     ports:
       - "50051:50051"
+    environment:
+      DATABASE_URL: postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable&statement_cache_mode=describe
+    depends_on:
+      - pgbouncer_loms
+    networks:
+      - net
+
   # notification:
   #   image: notification
   #   build: ./notification

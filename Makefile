@@ -11,3 +11,14 @@ precommit:
 	cd checkout && make precommit
 	cd loms && make precommit
 	cd notifications && make precommit
+
+
+# build docker image
+build:
+	docker-compose build
+
+up-all:
+	docker-compose up -d
+
+down:
+	docker-compose down

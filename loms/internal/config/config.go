@@ -8,11 +8,6 @@ import (
 )
 
 type ConfigStruct struct {
-	Token    string `yaml:"token"`
-	Services struct {
-		LOMS           string `yaml:"loms"`
-		ProductService string `yaml:"productservice"`
-	} `yaml:"services"`
 	GRPCPort    int    `yaml:"grpc_port"`
 	DatabaseURL string `yaml:"database_url"`
 }
