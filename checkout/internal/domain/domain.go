@@ -43,6 +43,7 @@ type LOMSClient interface {
 
 type ProductClient interface {
 	GetProduct(ctx context.Context, token string, sku uint32) (Product, error)
+	GetProducts(ctx context.Context, token string, skus []uint32) (map[uint32]Product, error)
 }
 
 type Model struct {

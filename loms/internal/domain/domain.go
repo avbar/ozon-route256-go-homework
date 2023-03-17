@@ -1,6 +1,9 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type OrderID int64
 
@@ -34,10 +37,14 @@ type Model struct {
 }
 
 func New(lomsRepository LOMSRepository, transactionManager TransactionManager) *Model {
-	return &Model{
+	m := &Model{
 		lomsRepository:     lomsRepository,
 		transactionManager: transactionManager,
 	}
+
+	go m.runOrderTimer(context.Background())
+
+	return m
 }
 
 type LOMSRepository interface {
@@ -49,6 +56,7 @@ type LOMSRepository interface {
 	CreateReserve(ctx context.Context, orderID OrderID, items []OrderItem) error
 	CancelReserve(ctx context.Context, orderID OrderID) error
 	DeleteReserve(ctx context.Context, orderID OrderID) error
+	GetOldOrders(ctx context.Context, createdBefore time.Time) ([]OrderID, error)
 }
 
 type TransactionManager interface {
