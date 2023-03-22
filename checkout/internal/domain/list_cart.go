@@ -14,7 +14,7 @@ func (m *Model) ListCart(ctx context.Context, user int64) (Cart, error) {
 	// Читаем из БД список товаров корзины
 	CartItems, err := m.checkoutRepository.ListCart(ctx, user)
 	if err != nil {
-		return cart, nil
+		return cart, err
 	}
 
 	// Собираем все sku
