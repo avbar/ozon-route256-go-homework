@@ -2,12 +2,11 @@ package domain_test
 
 import (
 	"context"
-	"testing"
-
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/domain/mocks"
 	"route256/libs/postgres/transactor"
 	txMocks "route256/libs/postgres/transactor/mocks"
+	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gojuno/minimock/v3"
@@ -218,7 +217,7 @@ func TestPurchase(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			businessLogic := domain.New(tt.lomsClientMock(mc), nil, tt.checkoutRepositoryMock(mc), transactor.NewTransactionManager(tt.dbMock(mc)))
-			res, err := businessLogic.Purchase(ctx, user)
+			res, err := businessLogic.Purchase(tt.args.ctx, tt.args.user)
 			require.Equal(t, tt.want, res)
 			if tt.err != nil {
 				require.ErrorContains(t, err, tt.err.Error())

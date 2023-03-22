@@ -3,11 +3,10 @@ package domain_test
 import (
 	"context"
 	"errors"
-	"testing"
-
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/domain/mocks"
 	"route256/libs/postgres/transactor"
+	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gojuno/minimock/v3"
@@ -140,7 +139,7 @@ func TestListCart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			businessLogic := domain.New(nil, tt.productClientMock(mc), tt.checkoutRepositoryMock(mc), nil)
-			res, err := businessLogic.ListCart(ctx, user)
+			res, err := businessLogic.ListCart(tt.args.ctx, tt.args.user)
 			require.Equal(t, tt.want, res)
 			if tt.err != nil {
 				require.ErrorContains(t, err, tt.err.Error())
