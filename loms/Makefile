@@ -65,3 +65,9 @@ generate:
 	--go_out=pkg/loms_v1 --go_opt=paths=source_relative \
 	--go-grpc_out=pkg/loms_v1 --go-grpc_opt=paths=source_relative \
 	api/loms_v1/loms.proto
+
+
+test-coverage:
+	@go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out; \
+	 go tool cover -func=./coverage.out | grep "total"; \
+     grep -sqFx "/coverage.out" .gitignore || echo "/coverage.out" >> .gitignore

@@ -1,7 +1,8 @@
 package transactor
 
-//go:generate sh -c "mkdir -p mocks && rm -rf mocks/db_minimock.go"
+//go:generate sh -c "mkdir -p mocks && rm -rf mocks/db_minimock.go mocks/tx_minimock.go"
 //go:generate minimock -i DB -o ./mocks/ -s "_minimock.go"
+//go:generate minimock -i github.com/jackc/pgx/v4.Tx -o ./mocks/tx_minimock.go
 
 import (
 	"context"

@@ -5,18 +5,12 @@ import (
 	"errors"
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/domain/mocks"
-	"route256/libs/postgres/transactor"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
 )
-
-type lomsClientMockFunc func(mc *minimock.Controller) domain.LOMSClient
-type productClientMockFunc func(mc *minimock.Controller) domain.ProductClient
-type checkoutRepositoryMockFunc func(mc *minimock.Controller) domain.CheckoutRepository
-type dbMockFunc func(mc *minimock.Controller) transactor.DB
 
 func TestListCart(t *testing.T) {
 	type args struct {

@@ -1,5 +1,8 @@
 package domain
 
+//go:generate sh -c "mkdir -p mocks && rm -rf mocks/loms_repository_minimock.go"
+//go:generate minimock -i LOMSRepository -o ./mocks/ -s "_minimock.go"
+
 import (
 	"context"
 	"time"

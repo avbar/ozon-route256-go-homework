@@ -29,7 +29,7 @@ func TestPurchase(t *testing.T) {
 		user = gofakeit.Int64()
 
 		opts = pgx.TxOptions{IsoLevel: pgx.RepeatableRead}
-		tx   = mocks.NewTxMock(t)
+		tx   = txMocks.NewTxMock(t)
 
 		listCartErr       = errors.New("list cart error")
 		createOrderErr    = errors.New("create order error")
