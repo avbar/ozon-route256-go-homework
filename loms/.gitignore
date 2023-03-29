@@ -2,3 +2,4 @@
 /config.yml
 /vendor-proto
 /pgdata
+/coverage.out

@@ -1,40 +1,59 @@
 package transactor
 
+//go:generate sh -c "mkdir -p mocks && rm -rf mocks/db_minimock.go mocks/tx_minimock.go"
+//go:generate minimock -i DB -o ./mocks/ -s "_minimock.go"
+//go:generate minimock -i github.com/jackc/pgx/v4.Tx -o ./mocks/tx_minimock.go
+
 import (
 	"context"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/multierr"
 )
 
 type QueryEngine interface {
 	Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error)
 	QueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row
-	Exec(ctx context.Context, query string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
 type QueryEngineProvider interface {
 	GetQueryEngine(ctx context.Context) QueryEngine // tx/pool
 }
 
+type Transactor interface {
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+}
+
+type DB interface {
+	QueryEngine
+	Transactor
+}
+
 type TransactionManager struct {
-	pool *pgxpool.Pool
+	db DB
 }
 
 type txkey string
 
 const key = txkey("tx")
 
-func NewTransactionManager(pool *pgxpool.Pool) *TransactionManager {
+func NewTransactionManager(db DB) *TransactionManager {
 	return &TransactionManager{
-		pool: pool,
+		db: db,
 	}
 }
 
 func (tm *TransactionManager) RunRepeatableRead(ctx context.Context, fx func(ctxTX context.Context) error) error {
-	tx, err := tm.pool.BeginTx(ctx,
+	// For nested transaction just return handler
+	tx, ok := ctx.Value(key).(pgx.Tx)
+	if ok && tx != nil {
+		return fx(ctx)
+	}
+
+	// Begin transaction
+	tx, err := tm.db.BeginTx(ctx,
 		pgx.TxOptions{
 			IsoLevel: pgx.RepeatableRead,
 		})
@@ -59,5 +78,5 @@ func (tm *TransactionManager) GetQueryEngine(ctx context.Context) QueryEngine {
 		return tx
 	}
 
-	return tm.pool
+	return tm.db
 }

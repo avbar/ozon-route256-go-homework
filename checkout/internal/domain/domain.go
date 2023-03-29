@@ -1,5 +1,10 @@
 package domain
 
+//go:generate sh -c "mkdir -p mocks && rm -rf mocks/loms_client_minimock.go mocks/product_client_minimock.go mocks/checkout_repository_minimock.go"
+//go:generate minimock -i LOMSClient -o ./mocks/ -s "_minimock.go"
+//go:generate minimock -i ProductClient -o ./mocks/ -s "_minimock.go"
+//go:generate minimock -i CheckoutRepository -o ./mocks/ -s "_minimock.go"
+
 import "context"
 
 type CartItem struct {
