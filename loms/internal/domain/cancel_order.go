@@ -27,5 +27,5 @@ func (m *Model) CancelOrder(ctx context.Context, orderID OrderID) error {
 		return err
 	}
 
-	return m.lomsRepository.ChangeStatus(ctx, orderID, OrderStatusCancelled)
+	return m.ChangeStatus(ctx, orderID, OrderStatusCancelled)
 }

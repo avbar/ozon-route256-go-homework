@@ -8,4 +8,5 @@ import (
 )
 
 type lomsRepositoryMockFunc func(mc *minimock.Controller) domain.LOMSRepository
+type orderSenderMockFunc func(mc *minimock.Controller) domain.OrderSender
 type dbMockFunc func(mc *minimock.Controller) transactor.DB

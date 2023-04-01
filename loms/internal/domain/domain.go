@@ -1,7 +1,8 @@
 package domain
 
-//go:generate sh -c "mkdir -p mocks && rm -rf mocks/loms_repository_minimock.go"
+//go:generate sh -c "mkdir -p mocks && rm -rf mocks/loms_repository_minimock.go mocks/order_sender_minimock.go"
 //go:generate minimock -i LOMSRepository -o ./mocks/ -s "_minimock.go"
+//go:generate minimock -i OrderSender -o ./mocks/ -s "_minimock.go"
 
 import (
 	"context"
@@ -34,18 +35,35 @@ type Stock struct {
 	Count       uint64
 }
 
+type OrdersOutbox struct {
+	OrderID OrderID
+	Status  string
+}
+
 type Model struct {
 	lomsRepository     LOMSRepository
 	transactionManager TransactionManager
+	orderSender        OrderSender
 }
 
-func New(lomsRepository LOMSRepository, transactionManager TransactionManager) *Model {
+func New(lomsRepository LOMSRepository, transactionManager TransactionManager, orderSender OrderSender) *Model {
 	m := &Model{
 		lomsRepository:     lomsRepository,
 		transactionManager: transactionManager,
+		orderSender:        orderSender,
 	}
 
-	go m.runOrderTimer(context.Background())
+	ctx := context.Background()
+
+	// Запускаем обработчик, отправляющий статусы заказов из Outbox в Kafka
+	// В случае успешной отправки удаляем заказ из Outbox
+	orderSender.AddSuccessHandler(ctx, func(orderID int64, status string) {
+		m.lomsRepository.DeleteOrderFromOutbox(ctx, OrderID(orderID), status)
+	})
+	go m.runOutboxProcessor(ctx)
+
+	// Обработка отмены заказов по тайм-ауту
+	go m.runOrderTimer(ctx)
 
 	return m
 }
@@ -60,8 +78,20 @@ type LOMSRepository interface {
 	CancelReserve(ctx context.Context, orderID OrderID) error
 	DeleteReserve(ctx context.Context, orderID OrderID) error
 	GetOldOrders(ctx context.Context, createdBefore time.Time) ([]OrderID, error)
+
+	SaveOrderToOutbox(ctx context.Context, orderID OrderID, status string) error
+	DeleteOrderFromOutbox(ctx context.Context, orderID OrderID, status string) error
+	GetOrdersFromOutbox(ctx context.Context) ([]OrdersOutbox, error)
 }
 
 type TransactionManager interface {
 	RunRepeatableRead(ctx context.Context, f func(ctxTX context.Context) error) error
+}
+
+type Handler func(orderID int64, status string)
+
+type OrderSender interface {
+	SendOrderStatus(ctx context.Context, orderID int64, status string)
+	AddSuccessHandler(ctx context.Context, onSuccess func(orderID int64, status string))
+	AddErrorHandler(ctx context.Context, onError func(orderID int64, status string))
 }

@@ -10,5 +10,5 @@ func (m *Model) OrderPayed(ctx context.Context, orderID OrderID) error {
 		return err
 	}
 
-	return m.lomsRepository.ChangeStatus(ctx, orderID, OrderStatusPayed)
+	return m.ChangeStatus(ctx, orderID, OrderStatusPayed)
 }

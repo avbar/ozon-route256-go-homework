@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"route256/kafka/kafka"
+	"route256/kafka/orders/sender"
 	"route256/libs/postgres/transactor"
 	"route256/loms/internal/api/loms"
 	"route256/loms/internal/config"
@@ -35,8 +37,15 @@ func main() {
 		log.Fatalf("failed to ping DB: %v", err)
 	}
 
+	log.Printf("kafka brokers: %v", config.ConfigData.Brokers)
+	producer, err := kafka.NewProducer(config.ConfigData.Brokers)
+	if err != nil {
+		log.Fatalf("failed to create producer: %v", err)
+	}
+	sender := sender.NewOrderSender(producer, "orders")
+
 	tm := transactor.NewTransactionManager(pool)
-	businessLogic := domain.New(repository.NewLOMSRepo(tm), tm)
+	businessLogic := domain.New(repository.NewLOMSRepo(tm), tm, sender)
 
 	// Server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.ConfigData.GRPCPort))

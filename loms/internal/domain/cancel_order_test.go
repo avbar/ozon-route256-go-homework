@@ -42,6 +42,7 @@ func TestCancelOrder(t *testing.T) {
 		args               args
 		err                error
 		lomsRepositoryMock lomsRepositoryMockFunc
+		orderSenderMock    orderSenderMockFunc
 		dbMock             dbMockFunc
 	}{
 		{
@@ -56,6 +57,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return(domain.OrderStatusAwaitingPayment, nil)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -78,6 +85,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return("", getStatusErr)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -100,6 +113,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return(domain.OrderStatusPayed, nil)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -122,6 +141,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return(domain.OrderStatusAwaitingPayment, nil)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(changeStatusErr)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -144,6 +169,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return(domain.OrderStatusAwaitingPayment, nil)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(cancelReserveErr)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -167,6 +198,12 @@ func TestCancelOrder(t *testing.T) {
 				mock.GetStatusMock.Expect(ctx, orderID).Return(domain.OrderStatusAwaitingPayment, nil)
 				mock.CancelReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusCancelled).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -181,7 +218,7 @@ func TestCancelOrder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			businessLogic := domain.New(tt.lomsRepositoryMock(mc), transactor.NewTransactionManager(tt.dbMock(mc)))
+			businessLogic := domain.New(tt.lomsRepositoryMock(mc), transactor.NewTransactionManager(tt.dbMock(mc)), tt.orderSenderMock(mc))
 			err := businessLogic.CancelOrder(tt.args.ctx, tt.args.orderID)
 			if tt.err != nil {
 				require.ErrorContains(t, err, tt.err.Error())

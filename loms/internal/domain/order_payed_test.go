@@ -33,6 +33,7 @@ func TestOrderPayed(t *testing.T) {
 		args               args
 		err                error
 		lomsRepositoryMock lomsRepositoryMockFunc
+		orderSenderMock    orderSenderMockFunc
 	}{
 		{
 			name: "positive case",
@@ -45,6 +46,12 @@ func TestOrderPayed(t *testing.T) {
 				mock := mocks.NewLOMSRepositoryMock(mc)
 				mock.DeleteReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 		},
@@ -60,6 +67,12 @@ func TestOrderPayed(t *testing.T) {
 				mock := mocks.NewLOMSRepositoryMock(mc)
 				mock.DeleteReserveMock.Expect(ctx, orderID).Return(deleteReserveErr)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 		},
@@ -75,6 +88,12 @@ func TestOrderPayed(t *testing.T) {
 				mock := mocks.NewLOMSRepositoryMock(mc)
 				mock.DeleteReserveMock.Expect(ctx, orderID).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(changeStatusErr)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusPayed).Return(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 		},
@@ -82,7 +101,7 @@ func TestOrderPayed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil)
+			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil, tt.orderSenderMock(mc))
 			err := businessLogic.OrderPayed(tt.args.ctx, tt.args.orderID)
 			if tt.err != nil {
 				require.ErrorContains(t, err, tt.err.Error())

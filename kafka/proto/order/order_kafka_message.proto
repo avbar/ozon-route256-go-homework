@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proto.order;
+
+option go_package = "route256/kafka/pkg/proto/order";
+
+message Order {
+    int64 order_id = 1;
+    string status = 2;
+}

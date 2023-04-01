@@ -45,6 +45,7 @@ func TestStocks(t *testing.T) {
 		want               []domain.Stock
 		err                error
 		lomsRepositoryMock lomsRepositoryMockFunc
+		orderSenderMock    orderSenderMockFunc
 	}{
 		{
 			name: "positive case",
@@ -57,6 +58,11 @@ func TestStocks(t *testing.T) {
 			lomsRepositoryMock: func(mc *minimock.Controller) domain.LOMSRepository {
 				mock := mocks.NewLOMSRepositoryMock(mc)
 				mock.StocksMock.Expect(ctx, sku).Return(repoRes, nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 		},
@@ -74,12 +80,17 @@ func TestStocks(t *testing.T) {
 				mock.StocksMock.Expect(ctx, sku).Return(nil, repoErr)
 				return mock
 			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
+				return mock
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil)
+			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil, tt.orderSenderMock(mc))
 			res, err := businessLogic.Stocks(tt.args.ctx, tt.args.sku)
 			require.Equal(t, tt.want, res)
 			if tt.err != nil {

@@ -47,6 +47,7 @@ func TestListOrder(t *testing.T) {
 		want               domain.Order
 		err                error
 		lomsRepositoryMock lomsRepositoryMockFunc
+		orderSenderMock    orderSenderMockFunc
 	}{
 		{
 			name: "positive case",
@@ -59,6 +60,11 @@ func TestListOrder(t *testing.T) {
 			lomsRepositoryMock: func(mc *minimock.Controller) domain.LOMSRepository {
 				mock := mocks.NewLOMSRepositoryMock(mc)
 				mock.ListOrderMock.Expect(ctx, orderID).Return(repoRes, nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 		},
@@ -76,12 +82,17 @@ func TestListOrder(t *testing.T) {
 				mock.ListOrderMock.Expect(ctx, orderID).Return(domain.Order{}, repoErr)
 				return mock
 			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
+				return mock
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil)
+			businessLogic := domain.New(tt.lomsRepositoryMock(mc), nil, tt.orderSenderMock(mc))
 			res, err := businessLogic.ListOrder(tt.args.ctx, tt.args.orderID)
 			require.Equal(t, tt.want, res)
 			if tt.err != nil {
