@@ -37,25 +37,35 @@ func (m *Model) sendOrderStatuses(ctx context.Context) {
 		return
 	}
 
+	// Группируем статусы по заказам для правильного порядка отправки статусов одного заказа
+	orderStatuses := make(map[OrderID][]string)
+	for _, order := range orders {
+		orderStatuses[order.OrderID] = append(orderStatuses[order.OrderID], order.Status)
+	}
+
 	// Создаём WorkerPool размера outboxWorkers
 	workerPool := workerpool.NewPool[error](ctx, outboxWorkers)
 
 	var wgSubmit sync.WaitGroup
-	for _, order := range orders {
+	for orderID, statuses := range orderStatuses {
 		wgSubmit.Add(1)
 
 		// Добавляем в WorkerPool статус заказа
-		go func(orderID OrderID, status string) {
+		go func(orderID OrderID, statuses []string) {
 			defer wgSubmit.Done()
 
 			workerPool.Submit(ctx, workerpool.Task[error]{
 				Callback: func() error {
-					m.orderSender.SendOrderStatus(ctx, int64(orderID), status)
+					for _, status := range statuses {
+						m.orderSender.SendOrderStatus(ctx, int64(orderID), status)
+					}
 					return nil
 				},
 			})
-		}(order.OrderID, order.Status)
+		}(orderID, statuses)
 	}
+
+	go workerPool.SkipOutput(ctx)
 
 	// Дожидаемся окончания работы горутин
 	wgSubmit.Wait()

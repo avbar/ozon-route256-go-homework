@@ -66,6 +66,8 @@ func (m *Model) cancelOldOrders(ctx context.Context) {
 		}(orderID)
 	}
 
+	go workerPool.SkipOutput(ctx)
+
 	// Дожидаемся окончания работы запросов на отмену
 	wgSubmit.Wait()
 	workerPool.Close()

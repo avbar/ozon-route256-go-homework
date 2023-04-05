@@ -14,6 +14,7 @@ type Task[Out any] struct {
 type WorkerPool[Out any] interface {
 	Submit(context.Context, Task[Out])
 	OutQueue() <-chan Out
+	SkipOutput(context.Context)
 	Close()
 }
 
@@ -57,6 +58,17 @@ func (p *pool[Out]) OutQueue() <-chan Out {
 	return p.outQueue
 }
 
+// Очистка выходного канала, если результат не нужен
+func (p *pool[Out]) SkipOutput(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-p.outQueue:
+		}
+	}
+}
+
 // Закрытие каналов
 func (p *pool[Out]) Close() {
 	// Закрываем входной канал
@@ -94,5 +106,4 @@ func worker[Out any](ctx context.Context, taskQueue <-chan Task[Out], outQueue c
 		case outQueue <- task.Callback():
 		}
 	}
-	return
 }
