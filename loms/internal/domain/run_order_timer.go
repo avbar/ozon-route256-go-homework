@@ -2,10 +2,12 @@ package domain
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	"route256/libs/workerpool"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -30,11 +32,11 @@ func (m *Model) runOrderTimer(ctx context.Context) {
 // Отменяет заказы, не оплаченные в течение времени orderTimeout
 func (m *Model) cancelOldOrders(ctx context.Context) {
 	orderTime := time.Now().Add(-orderTimeout)
-	log.Printf("cancelling unpaid orders created before %v", orderTime.Format(time.DateTime))
+	logger.Info("cancelling unpaid orders created before time", zap.Time("time", orderTime))
 
 	orders, err := m.lomsRepository.GetOldOrders(ctx, orderTime)
 	if err != nil {
-		log.Printf("error getting old orders: %v", err)
+		logger.Error("error getting old orders", zap.Error(err))
 		return
 	}
 	if len(orders) == 0 {
@@ -56,9 +58,9 @@ func (m *Model) cancelOldOrders(ctx context.Context) {
 				Callback: func() error {
 					err := m.CancelOrder(ctx, orderID)
 					if err != nil {
-						log.Printf("error cancelling old order %v: %v", orderID, err)
+						logger.Error("error cancelling old order", zap.Int64("order id", int64(orderID)), zap.Error(err))
 					} else {
-						log.Printf("order %v cancelled", orderID)
+						logger.Info("order cancelled", zap.Int64("order id", int64(orderID)))
 					}
 					return err
 				},

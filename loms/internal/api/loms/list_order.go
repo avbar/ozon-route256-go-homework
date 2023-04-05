@@ -2,13 +2,15 @@ package loms
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	"route256/loms/internal/domain"
 	desc "route256/loms/pkg/loms_v1"
+
+	"go.uber.org/zap"
 )
 
 func (i *Implementation) ListOrder(ctx context.Context, req *desc.ListOrderRequest) (*desc.ListOrderResponse, error) {
-	log.Printf("listOrder: %+v", req)
+	logger.Info("listOrder", zap.Any("request", req))
 
 	order, err := i.businessLogic.ListOrder(ctx, domain.OrderID(req.GetOrderId()))
 	if err != nil {

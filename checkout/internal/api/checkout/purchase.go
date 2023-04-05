@@ -2,12 +2,14 @@ package checkout
 
 import (
 	"context"
-	"log"
 	desc "route256/checkout/pkg/checkout_v1"
+	"route256/libs/logger"
+
+	"go.uber.org/zap"
 )
 
 func (i *Implementation) Purchase(ctx context.Context, req *desc.PurchaseRequest) (*desc.PurchaseResponse, error) {
-	log.Printf("purchase: %+v", req)
+	logger.Info("purchase", zap.Any("request", req))
 
 	orderID, err := i.businessLogic.Purchase(ctx, req.GetUser())
 	if err != nil {

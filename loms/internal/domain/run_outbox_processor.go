@@ -2,10 +2,12 @@ package domain
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	"route256/libs/workerpool"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -30,7 +32,7 @@ func (m *Model) runOutboxProcessor(ctx context.Context) {
 func (m *Model) sendOrderStatuses(ctx context.Context) {
 	orders, err := m.lomsRepository.GetOrdersFromOutbox(ctx)
 	if err != nil {
-		log.Printf("error reading outbox: %v", err)
+		logger.Error("error reading outbox", zap.Error(err))
 		return
 	}
 	if len(orders) == 0 {

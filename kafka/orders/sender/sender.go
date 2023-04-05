@@ -3,11 +3,12 @@ package sender
 import (
 	"context"
 	"fmt"
-	"log"
 	"route256/kafka/pkg/order"
+	"route256/libs/logger"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -31,19 +32,19 @@ func NewOrderSender(producer sarama.AsyncProducer, topic string) *orderSender {
 		for e := range producer.Errors() {
 			key, err := e.Msg.Key.Encode()
 			if err != nil {
-				log.Printf("kafka message encoding error: %v", err)
+				logger.Error("kafka message encoding error", zap.Error(err))
 				continue
 			}
 			value, err := e.Msg.Value.Encode()
 			if err != nil {
-				log.Printf("kafka message encoding error: %v", err)
+				logger.Error("kafka message encoding error", zap.Error(err))
 				continue
 			}
 
 			var orderpb order.Order
 			err = protojson.Unmarshal(value, &orderpb)
 			if err != nil {
-				log.Printf("kafka message unmarshalling error: %v", err)
+				logger.Error("kafka message unmarshalling error", zap.Error(err))
 				continue
 			}
 
@@ -51,7 +52,8 @@ func NewOrderSender(producer sarama.AsyncProducer, topic string) *orderSender {
 				s.onError(orderpb.GetOrderId(), orderpb.GetStatus())
 			}
 
-			log.Printf("order id: %s, status: %s, error: %s", key, orderpb.GetStatus(), e.Error())
+			logger.Info("order status send error", zap.ByteString("order id", key),
+				zap.String("status", orderpb.GetStatus()), zap.String("error", e.Error()))
 		}
 	}()
 
@@ -60,19 +62,19 @@ func NewOrderSender(producer sarama.AsyncProducer, topic string) *orderSender {
 		for m := range producer.Successes() {
 			key, err := m.Key.Encode()
 			if err != nil {
-				log.Printf("kafka message encoding error: %v", err)
+				logger.Error("kafka message encoding error", zap.Error(err))
 				continue
 			}
 			value, err := m.Value.Encode()
 			if err != nil {
-				log.Printf("kafka message encoding error: %v", err)
+				logger.Error("kafka message encoding error", zap.Error(err))
 				continue
 			}
 
 			var orderpb order.Order
 			err = protojson.Unmarshal(value, &orderpb)
 			if err != nil {
-				log.Printf("kafka message unmarshalling error: %v", err)
+				logger.Error("kafka message unmarshalling error", zap.Error(err))
 				continue
 			}
 
@@ -80,7 +82,8 @@ func NewOrderSender(producer sarama.AsyncProducer, topic string) *orderSender {
 				s.onSuccess(orderpb.GetOrderId(), orderpb.GetStatus())
 			}
 
-			log.Printf("order id: %s, status: %s, partition: %d, offset: %d", key, orderpb.GetStatus(), m.Partition, m.Offset)
+			logger.Info("order status sent", zap.ByteString("order id", key), zap.String("status", orderpb.GetStatus()),
+				zap.Int32("partition", m.Partition), zap.Int64("offset", m.Offset))
 		}
 	}()
 
@@ -95,7 +98,7 @@ func (s *orderSender) SendOrderStatus(ctx context.Context, orderID int64, status
 
 	bytes, err := protojson.Marshal(orderpb)
 	if err != nil {
-		log.Printf("kafka message marshalling error: %v", err)
+		logger.Error("kafka message marshalling error", zap.Error(err))
 		return
 	}
 

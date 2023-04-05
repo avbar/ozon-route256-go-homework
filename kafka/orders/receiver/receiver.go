@@ -1,10 +1,11 @@
 package receiver
 
 import (
-	"log"
 	"route256/kafka/pkg/order"
+	"route256/libs/logger"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -39,11 +40,11 @@ func (r *Receiver) Subscribe(topic string) error {
 				var orderpb order.Order
 				err := protojson.Unmarshal(message.Value, &orderpb)
 				if err != nil {
-					log.Printf("kafka message unmarshalling error: %v", err)
+					logger.Error("kafka message unmarshalling error", zap.Error(err))
 				}
 
-				log.Printf("order id: %s, status: %s, partition: %d, offset: %d",
-					k, orderpb.GetStatus(), message.Partition, message.Offset)
+				logger.Info("order status changed", zap.String("order id", k), zap.String("status", orderpb.GetStatus()),
+					zap.Int32("partition", message.Partition), zap.Int64("offset", message.Offset))
 			}
 		}(pc)
 	}
