@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"route256/kafka/kafka"
 	"route256/kafka/orders/sender"
 	"route256/libs/logger"
+	"route256/libs/metrics"
 	"route256/libs/postgres/dbwrapper"
 	"route256/libs/postgres/transactor"
 	"route256/libs/tracing"
@@ -73,6 +75,7 @@ func main() {
 			grpcMiddleware.ChainUnaryServer(
 				logger.LoggingInterceptor,
 				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+				metrics.MetricsInterceptor,
 			),
 		),
 	)
@@ -81,6 +84,11 @@ func main() {
 	desc.RegisterLOMSServer(s, loms.NewLOMS(businessLogic))
 
 	log.Info("loms server listening", zap.Int("port", config.ConfigData.GRPCPort))
+
+	go func() {
+		http.Handle("/metrics", metrics.New())
+		http.ListenAndServe(fmt.Sprintf(":%d", config.ConfigData.HTTPPort), nil)
+	}()
 
 	if err = s.Serve(lis); err != nil {
 		log.Fatal("failed to serve", zap.Error(err))

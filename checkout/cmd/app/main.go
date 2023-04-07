@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"route256/checkout/internal/api/checkout"
 	"route256/checkout/internal/clients/grpc/loms"
 	"route256/checkout/internal/clients/grpc/productservice"
@@ -13,6 +14,7 @@ import (
 	repository "route256/checkout/internal/repository/postgres"
 	desc "route256/checkout/pkg/checkout_v1"
 	"route256/libs/logger"
+	"route256/libs/metrics"
 	"route256/libs/postgres/dbwrapper"
 	"route256/libs/postgres/transactor"
 	"route256/libs/tracing"
@@ -57,7 +59,12 @@ func main() {
 	connLOMS, err := grpc.Dial(
 		config.ConfigData.Services.LOMS,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+		grpc.WithUnaryInterceptor(
+			grpcMiddleware.ChainUnaryClient(
+				otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer()),
+				metrics.MetricsClientInterceptor,
+			),
+		),
 	)
 	if err != nil {
 		log.Fatal("failed to connect to LOMS server", zap.Error(err))
@@ -67,7 +74,12 @@ func main() {
 	connProduct, err := grpc.Dial(
 		config.ConfigData.Services.ProductService,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+		grpc.WithUnaryInterceptor(
+			grpcMiddleware.ChainUnaryClient(
+				otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer()),
+				metrics.MetricsClientInterceptor,
+			),
+		),
 	)
 	if err != nil {
 		log.Fatal("failed to connect to ProductService server", zap.Error(err))
@@ -90,6 +102,7 @@ func main() {
 			grpcMiddleware.ChainUnaryServer(
 				logger.LoggingInterceptor,
 				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+				metrics.MetricsInterceptor,
 			),
 		),
 	)
@@ -98,6 +111,11 @@ func main() {
 	desc.RegisterCheckoutServer(s, checkout.NewCheckout(businessLogic))
 
 	log.Info("checkout server listening", zap.String("port", fmt.Sprint(config.ConfigData.GRPCPort)))
+
+	go func() {
+		http.Handle("/metrics", metrics.New())
+		http.ListenAndServe(fmt.Sprintf(":%d", config.ConfigData.HTTPPort), nil)
+	}()
 
 	if err = s.Serve(lis); err != nil {
 		log.Fatal("failed to serve", zap.Error(err))

@@ -1,3 +1,4 @@
+http_port: 8082
 brokers:
   - "kafka1:29091"
   - "kafka2:29092"

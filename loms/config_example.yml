@@ -1,4 +1,5 @@
 grpc_port: 50051
+http_port: 8081
 database_url: "postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable"
 brokers:
   - "kafka1:29091"

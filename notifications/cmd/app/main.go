@@ -1,11 +1,13 @@
 package main
 
 import (
-	"context"
 	"flag"
+	"fmt"
+	"net/http"
 	"route256/kafka/kafka"
 	"route256/kafka/orders/receiver"
 	"route256/libs/logger"
+	"route256/libs/metrics"
 	"route256/libs/tracing"
 	"route256/notifications/internal/config"
 
@@ -36,5 +38,6 @@ func main() {
 
 	log.Info("notifications server started")
 
-	<-context.TODO().Done()
+	http.Handle("/metrics", metrics.New())
+	http.ListenAndServe(fmt.Sprintf(":%d", config.ConfigData.HTTPPort), nil)
 }

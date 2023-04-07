@@ -194,6 +194,7 @@ services:
     build: ./checkout/
     ports:
       - "50050:50050"
+      - "8080:8080"
     environment:
       DATABASE_URL: postgres://user:password@pgbouncer_checkout:5432/checkout?sslmode=disable&statement_cache_mode=describe
       JAEGER_AGENT_HOST: jaeger
@@ -209,6 +210,7 @@ services:
     build: ./loms/
     ports:
       - "50051:50051"
+      - "8081:8081"
     environment:
       DATABASE_URL: postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable&statement_cache_mode=describe
       JAEGER_AGENT_HOST: jaeger
@@ -247,5 +249,28 @@ services:
       - 16686:16686 # web
       - 14268:14268
       - 9411:9411
+    networks:
+      - net
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./libs/metrics/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./libs/metrics/alerts.yml:/etc/prometheus/alerts.yml
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - net
+
+  grafana:
+    image: grafana/grafana-oss
+    ports:
+      - 3000:3000
+    volumes:
+      - ./libs/metrics/grafanadata:/var/lib/grafana
+    links:
+      - prometheus
     networks:
       - net

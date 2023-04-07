@@ -2,7 +2,9 @@ package dbwrapper
 
 import (
 	"context"
+	"route256/libs/metrics"
 	"route256/libs/postgres/transactor"
+	"time"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -25,7 +27,13 @@ func (w *dbWrapper) Query(ctx context.Context, query string, args ...interface{}
 
 	span.SetTag("query", query)
 
-	return w.db.Query(ctx, query, args...)
+	timeStart := time.Now()
+	rows, err := w.db.Query(ctx, query, args...)
+	elapsedTime := time.Since(timeStart)
+
+	metrics.HistogramDBResponseTime.WithLabelValues(query).Observe(elapsedTime.Seconds())
+
+	return rows, err
 }
 
 func (w *dbWrapper) QueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row {
@@ -34,7 +42,13 @@ func (w *dbWrapper) QueryRow(ctx context.Context, query string, args ...interfac
 
 	span.SetTag("query", query)
 
-	return w.db.QueryRow(ctx, query, args...)
+	timeStart := time.Now()
+	row := w.db.QueryRow(ctx, query, args...)
+	elapsedTime := time.Since(timeStart)
+
+	metrics.HistogramDBResponseTime.WithLabelValues(query).Observe(elapsedTime.Seconds())
+
+	return row
 }
 
 func (w *dbWrapper) Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error) {
@@ -43,7 +57,13 @@ func (w *dbWrapper) Exec(ctx context.Context, query string, args ...interface{})
 
 	span.SetTag("query", query)
 
-	return w.db.Exec(ctx, query, args...)
+	timeStart := time.Now()
+	commandTag, err := w.db.Exec(ctx, query, args...)
+	elapsedTime := time.Since(timeStart)
+
+	metrics.HistogramDBResponseTime.WithLabelValues(query).Observe(elapsedTime.Seconds())
+
+	return commandTag, err
 }
 
 func (w *dbWrapper) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
