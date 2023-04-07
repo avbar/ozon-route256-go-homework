@@ -13,9 +13,14 @@ import (
 	repository "route256/checkout/internal/repository/postgres"
 	desc "route256/checkout/pkg/checkout_v1"
 	"route256/libs/logger"
+	"route256/libs/postgres/dbwrapper"
 	"route256/libs/postgres/transactor"
+	"route256/libs/tracing"
 
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -27,7 +32,9 @@ var develMode = flag.Bool("devel", true, "development mode")
 func main() {
 	flag.Parse()
 
-	log := logger.Init(*develMode)
+	logger.Init(*develMode)
+	log := logger.GlobalLogger()
+	tracing.Init(log, "checkout")
 
 	err := config.Init()
 	if err != nil {
@@ -47,13 +54,21 @@ func main() {
 	}
 
 	// Clients
-	connLOMS, err := grpc.Dial(config.ConfigData.Services.LOMS, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	connLOMS, err := grpc.Dial(
+		config.ConfigData.Services.LOMS,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	)
 	if err != nil {
 		log.Fatal("failed to connect to LOMS server", zap.Error(err))
 	}
 	defer connLOMS.Close()
 
-	connProduct, err := grpc.Dial(config.ConfigData.Services.ProductService, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	connProduct, err := grpc.Dial(
+		config.ConfigData.Services.ProductService,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	)
 	if err != nil {
 		log.Fatal("failed to connect to ProductService server", zap.Error(err))
 	}
@@ -61,7 +76,7 @@ func main() {
 
 	lomsClient := loms.NewClient(connLOMS)
 	productClient := productservice.NewClient(connProduct)
-	tm := transactor.NewTransactionManager(pool)
+	tm := transactor.NewTransactionManager(dbwrapper.NewWrapper(pool))
 	businessLogic := domain.New(lomsClient, productClient, repository.NewCheckoutRepo(tm), tm)
 
 	// Server
@@ -70,7 +85,14 @@ func main() {
 		log.Fatal("failed to listen", zap.Error(err))
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			grpcMiddleware.ChainUnaryServer(
+				logger.LoggingInterceptor,
+				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+			),
+		),
+	)
 	reflection.Register(s)
 
 	desc.RegisterCheckoutServer(s, checkout.NewCheckout(businessLogic))

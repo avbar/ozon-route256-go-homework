@@ -8,14 +8,19 @@ import (
 	"route256/kafka/kafka"
 	"route256/kafka/orders/sender"
 	"route256/libs/logger"
+	"route256/libs/postgres/dbwrapper"
 	"route256/libs/postgres/transactor"
+	"route256/libs/tracing"
 	"route256/loms/internal/api/loms"
 	"route256/loms/internal/config"
 	"route256/loms/internal/domain"
 	repository "route256/loms/internal/repository/postgres"
 	desc "route256/loms/pkg/loms_v1"
 
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -26,7 +31,9 @@ var develMode = flag.Bool("devel", true, "development mode")
 func main() {
 	flag.Parse()
 
-	log := logger.Init(*develMode)
+	logger.Init(*develMode)
+	log := logger.GlobalLogger()
+	tracing.Init(log, "loms")
 
 	err := config.Init()
 	if err != nil {
@@ -52,7 +59,7 @@ func main() {
 	}
 	sender := sender.NewOrderSender(producer, "orders")
 
-	tm := transactor.NewTransactionManager(pool)
+	tm := transactor.NewTransactionManager(dbwrapper.NewWrapper(pool))
 	businessLogic := domain.New(repository.NewLOMSRepo(tm), tm, sender)
 
 	// Server
@@ -61,7 +68,14 @@ func main() {
 		log.Fatal("failed to listen", zap.Error(err))
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			grpcMiddleware.ChainUnaryServer(
+				logger.LoggingInterceptor,
+				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
+			),
+		),
+	)
 	reflection.Register(s)
 
 	desc.RegisterLOMSServer(s, loms.NewLOMS(businessLogic))

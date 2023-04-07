@@ -6,6 +6,7 @@ import (
 	"route256/kafka/kafka"
 	"route256/kafka/orders/receiver"
 	"route256/libs/logger"
+	"route256/libs/tracing"
 	"route256/notifications/internal/config"
 
 	"go.uber.org/zap"
@@ -16,7 +17,9 @@ var develMode = flag.Bool("devel", true, "development mode")
 func main() {
 	flag.Parse()
 
-	log := logger.Init(*develMode)
+	logger.Init(*develMode)
+	log := logger.GlobalLogger()
+	tracing.Init(log, "notifications")
 
 	err := config.Init()
 	if err != nil {

@@ -196,8 +196,11 @@ services:
       - "50050:50050"
     environment:
       DATABASE_URL: postgres://user:password@pgbouncer_checkout:5432/checkout?sslmode=disable&statement_cache_mode=describe
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 6831
     depends_on:
       - pgbouncer_checkout
+      - jaeger
     networks:
       - net
 
@@ -208,8 +211,11 @@ services:
       - "50051:50051"
     environment:
       DATABASE_URL: postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable&statement_cache_mode=describe
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 6831
     depends_on:
       - pgbouncer_loms
+      - jaeger
       - kafka1
       - kafka2
       - kafka3
@@ -229,3 +235,17 @@ services:
     networks:
       - net
     restart: on-failure
+
+  # observability
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686 # web
+      - 14268:14268
+      - 9411:9411
+    networks:
+      - net
