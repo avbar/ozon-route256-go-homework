@@ -97,6 +97,97 @@ services:
     networks:
       - net
 
+  # kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    ports:
+    - "2181:2181"
+    - "2888:2888"
+    - "3888:3888"
+    healthcheck:
+      test: echo stat | nc localhost 2181
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    environment:
+    - ZOOKEEPER_SERVER_ID=1
+    - ZOOKEEPER_CLIENT_PORT=2181
+    - ZOOKEEPER_TICK_TIME=2000
+    - ZOOKEEPER_INIT_LIMIT=5
+    - ZOOKEEPER_SYNC_LIMIT=2
+    - ZOOKEEPER_SERVERS=zookeeper:2888:3888
+    volumes:
+      - ./kafka/kafkadata/zoo/data:/var/lib/zookeeper/data
+      - ./kafka/kafkadata/zoo/log:/var/lib/zookeeper/log
+    networks:
+      - net
+
+  kafka1:
+    image: confluentinc/cp-kafka:latest
+    healthcheck:
+      test: ps augwwx | egrep [S]upportedKafka
+    depends_on:
+    - zookeeper
+    ports:
+    - "9091:9091"
+    environment:
+    - KAFKA_LISTENERS=LISTENER_INT://kafka1:29091,LISTENER_EXT://0.0.0.0:9091
+    - KAFKA_ADVERTISED_LISTENERS=LISTENER_INT://kafka1:29091,LISTENER_EXT://localhost:9091
+    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
+    - KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INT
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_BROKER_ID=1
+    - ZOOKEEPER=zookeeper:2181
+    volumes:
+      - ./kafka/kafkadata/kafka1/data:/var/lib/kafka/data
+    networks:
+      - net
+    restart: on-failure
+
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    healthcheck:
+      test: ps augwwx | egrep [S]upportedKafka
+    depends_on:
+    - zookeeper
+    ports:
+    - "9092:9092"
+    environment:
+    - KAFKA_LISTENERS=LISTENER_INT://kafka2:29092,LISTENER_EXT://0.0.0.0:9092
+    - KAFKA_ADVERTISED_LISTENERS=LISTENER_INT://kafka2:29092,LISTENER_EXT://localhost:9092
+    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
+    - KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INT
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_BROKER_ID=2
+    - ZOOKEEPER=zookeeper:2181
+    volumes:
+      - ./kafka/kafkadata/kafka2/data:/var/lib/kafka/data
+    networks:
+      - net
+    restart: on-failure
+
+  kafka3:
+    image: confluentinc/cp-kafka:latest
+    healthcheck:
+      test: ps augwwx | egrep [S]upportedKafka
+    depends_on:
+    - zookeeper
+    ports:
+    - "9093:9093"
+    environment:
+    - KAFKA_LISTENERS=LISTENER_INT://kafka3:29093,LISTENER_EXT://0.0.0.0:9093
+    - KAFKA_ADVERTISED_LISTENERS=LISTENER_INT://kafka3:29093,LISTENER_EXT://localhost:9093
+    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
+    - KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_INT
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_BROKER_ID=3
+    - ZOOKEEPER=zookeeper:2181
+    volumes:
+      - ./kafka/kafkadata/kafka3/data:/var/lib/kafka/data
+    networks:
+      - net
+    restart: on-failure
+
   # services
   checkout:
     image: checkout
@@ -119,11 +210,22 @@ services:
       DATABASE_URL: postgres://user:password@pgbouncer_loms:5432/loms?sslmode=disable&statement_cache_mode=describe
     depends_on:
       - pgbouncer_loms
+      - kafka1
+      - kafka2
+      - kafka3
     networks:
       - net
+    restart: on-failure
 
-  # notification:
-  #   image: notification
-  #   build: ./notification
-  #   ports:
-  #     - "8082:8082"
+  notifications:
+    image: notifications
+    build: ./notifications
+    ports:
+      - "8082:8082"
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    networks:
+      - net
+    restart: on-failure

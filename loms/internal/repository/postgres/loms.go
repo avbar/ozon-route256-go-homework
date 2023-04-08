@@ -18,15 +18,17 @@ func NewLOMSRepo(provider transactor.QueryEngineProvider) *LOMSRepo {
 }
 
 var (
-	ordersColumns     = []string{"order_id", "status", "user_id", "created_at", "updated_at"}
-	orderItemsColumns = []string{"order_id", "sku", "count"}
-	stocksColumns     = []string{"sku", "warehouse_id", "count"}
-	reservesColumns   = []string{"sku", "warehouse_id", "order_id", "count"}
+	ordersColumns       = []string{"order_id", "status", "user_id", "created_at", "updated_at"}
+	orderItemsColumns   = []string{"order_id", "sku", "count"}
+	stocksColumns       = []string{"sku", "warehouse_id", "count"}
+	reservesColumns     = []string{"sku", "warehouse_id", "order_id", "count"}
+	ordersOutboxColumns = []string{"order_id", "status", "created_at"}
 )
 
 const (
-	ordersTable     = "orders"
-	orderItemsTable = "order_items"
-	stocksTable     = "stocks"
-	reservesTable   = "reserves"
+	ordersTable       = "orders"
+	orderItemsTable   = "order_items"
+	stocksTable       = "stocks"
+	reservesTable     = "reserves"
+	ordersOutboxTable = "orders_outbox"
 )

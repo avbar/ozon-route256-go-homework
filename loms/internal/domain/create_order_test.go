@@ -35,6 +35,7 @@ func TestCreateOrder(t *testing.T) {
 		orderID = domain.OrderID(gofakeit.Int64())
 
 		createOrderErr   = errors.New("repo create order error")
+		saveOutboxErr    = errors.New("save to outbox error")
 		createReserveErr = errors.New("repo create reserve error")
 		changeStatusErr  = errors.New("repo change status error")
 		commitErr        = errors.New("commit error")
@@ -55,6 +56,7 @@ func TestCreateOrder(t *testing.T) {
 		want               domain.OrderID
 		err                error
 		lomsRepositoryMock lomsRepositoryMockFunc
+		orderSenderMock    orderSenderMockFunc
 		dbMock             dbMockFunc
 	}{
 		{
@@ -71,6 +73,13 @@ func TestCreateOrder(t *testing.T) {
 				mock.CreateOrderMock.Expect(ctx, user, items).Return(orderID, nil)
 				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusAwaitingPayment).Return(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusNew).Then(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusAwaitingPayment).Then(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -95,6 +104,43 @@ func TestCreateOrder(t *testing.T) {
 				mock.CreateOrderMock.Expect(ctx, user, items).Return(0, createOrderErr)
 				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusAwaitingPayment).Return(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusNew).Then(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusAwaitingPayment).Then(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
+				return mock
+			},
+			dbMock: func(mc *minimock.Controller) transactor.DB {
+				mock := txMocks.NewDBMock(mc)
+				mock.BeginTxMock.Expect(ctx, opts).Return(tx, nil)
+				tx.CommitMock.Expect(ctx).Return(nil)
+				return mock
+			},
+		},
+
+		{
+			name: "save to outbox error",
+			args: args{
+				ctx:   ctx,
+				user:  user,
+				items: items,
+			},
+			want: 0,
+			err:  saveOutboxErr,
+			lomsRepositoryMock: func(mc *minimock.Controller) domain.LOMSRepository {
+				mock := mocks.NewLOMSRepositoryMock(mc)
+				mock.CreateOrderMock.Expect(ctx, user, items).Return(orderID, nil)
+				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(nil)
+				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusAwaitingPayment).Return(nil)
+				mock.SaveOrderToOutboxMock.Expect(ctx, orderID, domain.OrderStatusNew).Return(saveOutboxErr)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -119,6 +165,13 @@ func TestCreateOrder(t *testing.T) {
 				mock.CreateOrderMock.Expect(ctx, user, items).Return(orderID, nil)
 				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(createReserveErr)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusFailed).Return(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusNew).Then(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusFailed).Then(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -144,6 +197,13 @@ func TestCreateOrder(t *testing.T) {
 				mock.CreateOrderMock.Expect(ctx, user, items).Return(orderID, nil)
 				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusFailed).Return(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusNew).Then(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusFailed).Then(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -169,6 +229,13 @@ func TestCreateOrder(t *testing.T) {
 				mock.CreateOrderMock.Expect(ctx, user, items).Return(orderID, nil)
 				mock.CreateReserveMock.Expect(ctx, orderID, items).Return(nil)
 				mock.ChangeStatusMock.Expect(ctx, orderID, domain.OrderStatusAwaitingPayment).Return(changeStatusErr)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusNew).Then(nil)
+				mock.SaveOrderToOutboxMock.When(ctx, orderID, domain.OrderStatusAwaitingPayment).Then(nil)
+				return mock
+			},
+			orderSenderMock: func(mc *minimock.Controller) domain.OrderSender {
+				mock := mocks.NewOrderSenderMock(mc)
+				mock.AddSuccessHandlerMock.Set(func(ctx context.Context, onSuccess func(orderID int64, status string)) {})
 				return mock
 			},
 			dbMock: func(mc *minimock.Controller) transactor.DB {
@@ -182,7 +249,7 @@ func TestCreateOrder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			businessLogic := domain.New(tt.lomsRepositoryMock(mc), transactor.NewTransactionManager(tt.dbMock(mc)))
+			businessLogic := domain.New(tt.lomsRepositoryMock(mc), transactor.NewTransactionManager(tt.dbMock(mc)), tt.orderSenderMock(mc))
 			res, err := businessLogic.CreateOrder(tt.args.ctx, tt.args.user, tt.args.items)
 			require.Equal(t, tt.want, res)
 			if tt.err != nil {

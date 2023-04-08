@@ -1,0 +1,4 @@
+brokers:
+  - "kafka1:29091"
+  - "kafka2:29092"
+  - "kafka3:29093"

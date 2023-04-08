@@ -50,7 +50,7 @@ func (r *LOMSRepo) CancelReserve(ctx context.Context, orderID domain.OrderID) er
 	// delete from reserves
 	err = r.DeleteReserve(ctx, orderID)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return nil

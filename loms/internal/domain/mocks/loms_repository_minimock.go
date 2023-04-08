@@ -43,6 +43,12 @@ type LOMSRepositoryMock struct {
 	beforeCreateReserveCounter uint64
 	CreateReserveMock          mLOMSRepositoryMockCreateReserve
 
+	funcDeleteOrderFromOutbox          func(ctx context.Context, orderID mm_domain.OrderID, status string) (err error)
+	inspectFuncDeleteOrderFromOutbox   func(ctx context.Context, orderID mm_domain.OrderID, status string)
+	afterDeleteOrderFromOutboxCounter  uint64
+	beforeDeleteOrderFromOutboxCounter uint64
+	DeleteOrderFromOutboxMock          mLOMSRepositoryMockDeleteOrderFromOutbox
+
 	funcDeleteReserve          func(ctx context.Context, orderID mm_domain.OrderID) (err error)
 	inspectFuncDeleteReserve   func(ctx context.Context, orderID mm_domain.OrderID)
 	afterDeleteReserveCounter  uint64
@@ -55,6 +61,12 @@ type LOMSRepositoryMock struct {
 	beforeGetOldOrdersCounter uint64
 	GetOldOrdersMock          mLOMSRepositoryMockGetOldOrders
 
+	funcGetOrdersFromOutbox          func(ctx context.Context) (oa1 []mm_domain.OrdersOutbox, err error)
+	inspectFuncGetOrdersFromOutbox   func(ctx context.Context)
+	afterGetOrdersFromOutboxCounter  uint64
+	beforeGetOrdersFromOutboxCounter uint64
+	GetOrdersFromOutboxMock          mLOMSRepositoryMockGetOrdersFromOutbox
+
 	funcGetStatus          func(ctx context.Context, orderID mm_domain.OrderID) (s1 string, err error)
 	inspectFuncGetStatus   func(ctx context.Context, orderID mm_domain.OrderID)
 	afterGetStatusCounter  uint64
@@ -66,6 +78,12 @@ type LOMSRepositoryMock struct {
 	afterListOrderCounter  uint64
 	beforeListOrderCounter uint64
 	ListOrderMock          mLOMSRepositoryMockListOrder
+
+	funcSaveOrderToOutbox          func(ctx context.Context, orderID mm_domain.OrderID, status string) (err error)
+	inspectFuncSaveOrderToOutbox   func(ctx context.Context, orderID mm_domain.OrderID, status string)
+	afterSaveOrderToOutboxCounter  uint64
+	beforeSaveOrderToOutboxCounter uint64
+	SaveOrderToOutboxMock          mLOMSRepositoryMockSaveOrderToOutbox
 
 	funcStocks          func(ctx context.Context, sku uint32) (sa1 []mm_domain.Stock, err error)
 	inspectFuncStocks   func(ctx context.Context, sku uint32)
@@ -93,17 +111,26 @@ func NewLOMSRepositoryMock(t minimock.Tester) *LOMSRepositoryMock {
 	m.CreateReserveMock = mLOMSRepositoryMockCreateReserve{mock: m}
 	m.CreateReserveMock.callArgs = []*LOMSRepositoryMockCreateReserveParams{}
 
+	m.DeleteOrderFromOutboxMock = mLOMSRepositoryMockDeleteOrderFromOutbox{mock: m}
+	m.DeleteOrderFromOutboxMock.callArgs = []*LOMSRepositoryMockDeleteOrderFromOutboxParams{}
+
 	m.DeleteReserveMock = mLOMSRepositoryMockDeleteReserve{mock: m}
 	m.DeleteReserveMock.callArgs = []*LOMSRepositoryMockDeleteReserveParams{}
 
 	m.GetOldOrdersMock = mLOMSRepositoryMockGetOldOrders{mock: m}
 	m.GetOldOrdersMock.callArgs = []*LOMSRepositoryMockGetOldOrdersParams{}
 
+	m.GetOrdersFromOutboxMock = mLOMSRepositoryMockGetOrdersFromOutbox{mock: m}
+	m.GetOrdersFromOutboxMock.callArgs = []*LOMSRepositoryMockGetOrdersFromOutboxParams{}
+
 	m.GetStatusMock = mLOMSRepositoryMockGetStatus{mock: m}
 	m.GetStatusMock.callArgs = []*LOMSRepositoryMockGetStatusParams{}
 
 	m.ListOrderMock = mLOMSRepositoryMockListOrder{mock: m}
 	m.ListOrderMock.callArgs = []*LOMSRepositoryMockListOrderParams{}
+
+	m.SaveOrderToOutboxMock = mLOMSRepositoryMockSaveOrderToOutbox{mock: m}
+	m.SaveOrderToOutboxMock.callArgs = []*LOMSRepositoryMockSaveOrderToOutboxParams{}
 
 	m.StocksMock = mLOMSRepositoryMockStocks{mock: m}
 	m.StocksMock.callArgs = []*LOMSRepositoryMockStocksParams{}
@@ -979,6 +1006,223 @@ func (m *LOMSRepositoryMock) MinimockCreateReserveInspect() {
 	}
 }
 
+type mLOMSRepositoryMockDeleteOrderFromOutbox struct {
+	mock               *LOMSRepositoryMock
+	defaultExpectation *LOMSRepositoryMockDeleteOrderFromOutboxExpectation
+	expectations       []*LOMSRepositoryMockDeleteOrderFromOutboxExpectation
+
+	callArgs []*LOMSRepositoryMockDeleteOrderFromOutboxParams
+	mutex    sync.RWMutex
+}
+
+// LOMSRepositoryMockDeleteOrderFromOutboxExpectation specifies expectation struct of the LOMSRepository.DeleteOrderFromOutbox
+type LOMSRepositoryMockDeleteOrderFromOutboxExpectation struct {
+	mock    *LOMSRepositoryMock
+	params  *LOMSRepositoryMockDeleteOrderFromOutboxParams
+	results *LOMSRepositoryMockDeleteOrderFromOutboxResults
+	Counter uint64
+}
+
+// LOMSRepositoryMockDeleteOrderFromOutboxParams contains parameters of the LOMSRepository.DeleteOrderFromOutbox
+type LOMSRepositoryMockDeleteOrderFromOutboxParams struct {
+	ctx     context.Context
+	orderID mm_domain.OrderID
+	status  string
+}
+
+// LOMSRepositoryMockDeleteOrderFromOutboxResults contains results of the LOMSRepository.DeleteOrderFromOutbox
+type LOMSRepositoryMockDeleteOrderFromOutboxResults struct {
+	err error
+}
+
+// Expect sets up expected params for LOMSRepository.DeleteOrderFromOutbox
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) Expect(ctx context.Context, orderID mm_domain.OrderID, status string) *mLOMSRepositoryMockDeleteOrderFromOutbox {
+	if mmDeleteOrderFromOutbox.mock.funcDeleteOrderFromOutbox != nil {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.DeleteOrderFromOutbox mock is already set by Set")
+	}
+
+	if mmDeleteOrderFromOutbox.defaultExpectation == nil {
+		mmDeleteOrderFromOutbox.defaultExpectation = &LOMSRepositoryMockDeleteOrderFromOutboxExpectation{}
+	}
+
+	mmDeleteOrderFromOutbox.defaultExpectation.params = &LOMSRepositoryMockDeleteOrderFromOutboxParams{ctx, orderID, status}
+	for _, e := range mmDeleteOrderFromOutbox.expectations {
+		if minimock.Equal(e.params, mmDeleteOrderFromOutbox.defaultExpectation.params) {
+			mmDeleteOrderFromOutbox.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDeleteOrderFromOutbox.defaultExpectation.params)
+		}
+	}
+
+	return mmDeleteOrderFromOutbox
+}
+
+// Inspect accepts an inspector function that has same arguments as the LOMSRepository.DeleteOrderFromOutbox
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) Inspect(f func(ctx context.Context, orderID mm_domain.OrderID, status string)) *mLOMSRepositoryMockDeleteOrderFromOutbox {
+	if mmDeleteOrderFromOutbox.mock.inspectFuncDeleteOrderFromOutbox != nil {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("Inspect function is already set for LOMSRepositoryMock.DeleteOrderFromOutbox")
+	}
+
+	mmDeleteOrderFromOutbox.mock.inspectFuncDeleteOrderFromOutbox = f
+
+	return mmDeleteOrderFromOutbox
+}
+
+// Return sets up results that will be returned by LOMSRepository.DeleteOrderFromOutbox
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) Return(err error) *LOMSRepositoryMock {
+	if mmDeleteOrderFromOutbox.mock.funcDeleteOrderFromOutbox != nil {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.DeleteOrderFromOutbox mock is already set by Set")
+	}
+
+	if mmDeleteOrderFromOutbox.defaultExpectation == nil {
+		mmDeleteOrderFromOutbox.defaultExpectation = &LOMSRepositoryMockDeleteOrderFromOutboxExpectation{mock: mmDeleteOrderFromOutbox.mock}
+	}
+	mmDeleteOrderFromOutbox.defaultExpectation.results = &LOMSRepositoryMockDeleteOrderFromOutboxResults{err}
+	return mmDeleteOrderFromOutbox.mock
+}
+
+// Set uses given function f to mock the LOMSRepository.DeleteOrderFromOutbox method
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) Set(f func(ctx context.Context, orderID mm_domain.OrderID, status string) (err error)) *LOMSRepositoryMock {
+	if mmDeleteOrderFromOutbox.defaultExpectation != nil {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("Default expectation is already set for the LOMSRepository.DeleteOrderFromOutbox method")
+	}
+
+	if len(mmDeleteOrderFromOutbox.expectations) > 0 {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("Some expectations are already set for the LOMSRepository.DeleteOrderFromOutbox method")
+	}
+
+	mmDeleteOrderFromOutbox.mock.funcDeleteOrderFromOutbox = f
+	return mmDeleteOrderFromOutbox.mock
+}
+
+// When sets expectation for the LOMSRepository.DeleteOrderFromOutbox which will trigger the result defined by the following
+// Then helper
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) When(ctx context.Context, orderID mm_domain.OrderID, status string) *LOMSRepositoryMockDeleteOrderFromOutboxExpectation {
+	if mmDeleteOrderFromOutbox.mock.funcDeleteOrderFromOutbox != nil {
+		mmDeleteOrderFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.DeleteOrderFromOutbox mock is already set by Set")
+	}
+
+	expectation := &LOMSRepositoryMockDeleteOrderFromOutboxExpectation{
+		mock:   mmDeleteOrderFromOutbox.mock,
+		params: &LOMSRepositoryMockDeleteOrderFromOutboxParams{ctx, orderID, status},
+	}
+	mmDeleteOrderFromOutbox.expectations = append(mmDeleteOrderFromOutbox.expectations, expectation)
+	return expectation
+}
+
+// Then sets up LOMSRepository.DeleteOrderFromOutbox return parameters for the expectation previously defined by the When method
+func (e *LOMSRepositoryMockDeleteOrderFromOutboxExpectation) Then(err error) *LOMSRepositoryMock {
+	e.results = &LOMSRepositoryMockDeleteOrderFromOutboxResults{err}
+	return e.mock
+}
+
+// DeleteOrderFromOutbox implements domain.LOMSRepository
+func (mmDeleteOrderFromOutbox *LOMSRepositoryMock) DeleteOrderFromOutbox(ctx context.Context, orderID mm_domain.OrderID, status string) (err error) {
+	mm_atomic.AddUint64(&mmDeleteOrderFromOutbox.beforeDeleteOrderFromOutboxCounter, 1)
+	defer mm_atomic.AddUint64(&mmDeleteOrderFromOutbox.afterDeleteOrderFromOutboxCounter, 1)
+
+	if mmDeleteOrderFromOutbox.inspectFuncDeleteOrderFromOutbox != nil {
+		mmDeleteOrderFromOutbox.inspectFuncDeleteOrderFromOutbox(ctx, orderID, status)
+	}
+
+	mm_params := &LOMSRepositoryMockDeleteOrderFromOutboxParams{ctx, orderID, status}
+
+	// Record call args
+	mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.mutex.Lock()
+	mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.callArgs = append(mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.callArgs, mm_params)
+	mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.mutex.Unlock()
+
+	for _, e := range mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.defaultExpectation.Counter, 1)
+		mm_want := mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.defaultExpectation.params
+		mm_got := LOMSRepositoryMockDeleteOrderFromOutboxParams{ctx, orderID, status}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDeleteOrderFromOutbox.t.Errorf("LOMSRepositoryMock.DeleteOrderFromOutbox got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmDeleteOrderFromOutbox.DeleteOrderFromOutboxMock.defaultExpectation.results
+		if mm_results == nil {
+			mmDeleteOrderFromOutbox.t.Fatal("No results are set for the LOMSRepositoryMock.DeleteOrderFromOutbox")
+		}
+		return (*mm_results).err
+	}
+	if mmDeleteOrderFromOutbox.funcDeleteOrderFromOutbox != nil {
+		return mmDeleteOrderFromOutbox.funcDeleteOrderFromOutbox(ctx, orderID, status)
+	}
+	mmDeleteOrderFromOutbox.t.Fatalf("Unexpected call to LOMSRepositoryMock.DeleteOrderFromOutbox. %v %v %v", ctx, orderID, status)
+	return
+}
+
+// DeleteOrderFromOutboxAfterCounter returns a count of finished LOMSRepositoryMock.DeleteOrderFromOutbox invocations
+func (mmDeleteOrderFromOutbox *LOMSRepositoryMock) DeleteOrderFromOutboxAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteOrderFromOutbox.afterDeleteOrderFromOutboxCounter)
+}
+
+// DeleteOrderFromOutboxBeforeCounter returns a count of LOMSRepositoryMock.DeleteOrderFromOutbox invocations
+func (mmDeleteOrderFromOutbox *LOMSRepositoryMock) DeleteOrderFromOutboxBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDeleteOrderFromOutbox.beforeDeleteOrderFromOutboxCounter)
+}
+
+// Calls returns a list of arguments used in each call to LOMSRepositoryMock.DeleteOrderFromOutbox.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmDeleteOrderFromOutbox *mLOMSRepositoryMockDeleteOrderFromOutbox) Calls() []*LOMSRepositoryMockDeleteOrderFromOutboxParams {
+	mmDeleteOrderFromOutbox.mutex.RLock()
+
+	argCopy := make([]*LOMSRepositoryMockDeleteOrderFromOutboxParams, len(mmDeleteOrderFromOutbox.callArgs))
+	copy(argCopy, mmDeleteOrderFromOutbox.callArgs)
+
+	mmDeleteOrderFromOutbox.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockDeleteOrderFromOutboxDone returns true if the count of the DeleteOrderFromOutbox invocations corresponds
+// the number of defined expectations
+func (m *LOMSRepositoryMock) MinimockDeleteOrderFromOutboxDone() bool {
+	for _, e := range m.DeleteOrderFromOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DeleteOrderFromOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDeleteOrderFromOutboxCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDeleteOrderFromOutbox != nil && mm_atomic.LoadUint64(&m.afterDeleteOrderFromOutboxCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockDeleteOrderFromOutboxInspect logs each unmet expectation
+func (m *LOMSRepositoryMock) MinimockDeleteOrderFromOutboxInspect() {
+	for _, e := range m.DeleteOrderFromOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.DeleteOrderFromOutbox with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DeleteOrderFromOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDeleteOrderFromOutboxCounter) < 1 {
+		if m.DeleteOrderFromOutboxMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to LOMSRepositoryMock.DeleteOrderFromOutbox")
+		} else {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.DeleteOrderFromOutbox with params: %#v", *m.DeleteOrderFromOutboxMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDeleteOrderFromOutbox != nil && mm_atomic.LoadUint64(&m.afterDeleteOrderFromOutboxCounter) < 1 {
+		m.t.Error("Expected call to LOMSRepositoryMock.DeleteOrderFromOutbox")
+	}
+}
+
 type mLOMSRepositoryMockDeleteReserve struct {
 	mock               *LOMSRepositoryMock
 	defaultExpectation *LOMSRepositoryMockDeleteReserveExpectation
@@ -1409,6 +1653,222 @@ func (m *LOMSRepositoryMock) MinimockGetOldOrdersInspect() {
 	// if func was set then invocations count should be greater than zero
 	if m.funcGetOldOrders != nil && mm_atomic.LoadUint64(&m.afterGetOldOrdersCounter) < 1 {
 		m.t.Error("Expected call to LOMSRepositoryMock.GetOldOrders")
+	}
+}
+
+type mLOMSRepositoryMockGetOrdersFromOutbox struct {
+	mock               *LOMSRepositoryMock
+	defaultExpectation *LOMSRepositoryMockGetOrdersFromOutboxExpectation
+	expectations       []*LOMSRepositoryMockGetOrdersFromOutboxExpectation
+
+	callArgs []*LOMSRepositoryMockGetOrdersFromOutboxParams
+	mutex    sync.RWMutex
+}
+
+// LOMSRepositoryMockGetOrdersFromOutboxExpectation specifies expectation struct of the LOMSRepository.GetOrdersFromOutbox
+type LOMSRepositoryMockGetOrdersFromOutboxExpectation struct {
+	mock    *LOMSRepositoryMock
+	params  *LOMSRepositoryMockGetOrdersFromOutboxParams
+	results *LOMSRepositoryMockGetOrdersFromOutboxResults
+	Counter uint64
+}
+
+// LOMSRepositoryMockGetOrdersFromOutboxParams contains parameters of the LOMSRepository.GetOrdersFromOutbox
+type LOMSRepositoryMockGetOrdersFromOutboxParams struct {
+	ctx context.Context
+}
+
+// LOMSRepositoryMockGetOrdersFromOutboxResults contains results of the LOMSRepository.GetOrdersFromOutbox
+type LOMSRepositoryMockGetOrdersFromOutboxResults struct {
+	oa1 []mm_domain.OrdersOutbox
+	err error
+}
+
+// Expect sets up expected params for LOMSRepository.GetOrdersFromOutbox
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) Expect(ctx context.Context) *mLOMSRepositoryMockGetOrdersFromOutbox {
+	if mmGetOrdersFromOutbox.mock.funcGetOrdersFromOutbox != nil {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.GetOrdersFromOutbox mock is already set by Set")
+	}
+
+	if mmGetOrdersFromOutbox.defaultExpectation == nil {
+		mmGetOrdersFromOutbox.defaultExpectation = &LOMSRepositoryMockGetOrdersFromOutboxExpectation{}
+	}
+
+	mmGetOrdersFromOutbox.defaultExpectation.params = &LOMSRepositoryMockGetOrdersFromOutboxParams{ctx}
+	for _, e := range mmGetOrdersFromOutbox.expectations {
+		if minimock.Equal(e.params, mmGetOrdersFromOutbox.defaultExpectation.params) {
+			mmGetOrdersFromOutbox.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmGetOrdersFromOutbox.defaultExpectation.params)
+		}
+	}
+
+	return mmGetOrdersFromOutbox
+}
+
+// Inspect accepts an inspector function that has same arguments as the LOMSRepository.GetOrdersFromOutbox
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) Inspect(f func(ctx context.Context)) *mLOMSRepositoryMockGetOrdersFromOutbox {
+	if mmGetOrdersFromOutbox.mock.inspectFuncGetOrdersFromOutbox != nil {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("Inspect function is already set for LOMSRepositoryMock.GetOrdersFromOutbox")
+	}
+
+	mmGetOrdersFromOutbox.mock.inspectFuncGetOrdersFromOutbox = f
+
+	return mmGetOrdersFromOutbox
+}
+
+// Return sets up results that will be returned by LOMSRepository.GetOrdersFromOutbox
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) Return(oa1 []mm_domain.OrdersOutbox, err error) *LOMSRepositoryMock {
+	if mmGetOrdersFromOutbox.mock.funcGetOrdersFromOutbox != nil {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.GetOrdersFromOutbox mock is already set by Set")
+	}
+
+	if mmGetOrdersFromOutbox.defaultExpectation == nil {
+		mmGetOrdersFromOutbox.defaultExpectation = &LOMSRepositoryMockGetOrdersFromOutboxExpectation{mock: mmGetOrdersFromOutbox.mock}
+	}
+	mmGetOrdersFromOutbox.defaultExpectation.results = &LOMSRepositoryMockGetOrdersFromOutboxResults{oa1, err}
+	return mmGetOrdersFromOutbox.mock
+}
+
+// Set uses given function f to mock the LOMSRepository.GetOrdersFromOutbox method
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) Set(f func(ctx context.Context) (oa1 []mm_domain.OrdersOutbox, err error)) *LOMSRepositoryMock {
+	if mmGetOrdersFromOutbox.defaultExpectation != nil {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("Default expectation is already set for the LOMSRepository.GetOrdersFromOutbox method")
+	}
+
+	if len(mmGetOrdersFromOutbox.expectations) > 0 {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("Some expectations are already set for the LOMSRepository.GetOrdersFromOutbox method")
+	}
+
+	mmGetOrdersFromOutbox.mock.funcGetOrdersFromOutbox = f
+	return mmGetOrdersFromOutbox.mock
+}
+
+// When sets expectation for the LOMSRepository.GetOrdersFromOutbox which will trigger the result defined by the following
+// Then helper
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) When(ctx context.Context) *LOMSRepositoryMockGetOrdersFromOutboxExpectation {
+	if mmGetOrdersFromOutbox.mock.funcGetOrdersFromOutbox != nil {
+		mmGetOrdersFromOutbox.mock.t.Fatalf("LOMSRepositoryMock.GetOrdersFromOutbox mock is already set by Set")
+	}
+
+	expectation := &LOMSRepositoryMockGetOrdersFromOutboxExpectation{
+		mock:   mmGetOrdersFromOutbox.mock,
+		params: &LOMSRepositoryMockGetOrdersFromOutboxParams{ctx},
+	}
+	mmGetOrdersFromOutbox.expectations = append(mmGetOrdersFromOutbox.expectations, expectation)
+	return expectation
+}
+
+// Then sets up LOMSRepository.GetOrdersFromOutbox return parameters for the expectation previously defined by the When method
+func (e *LOMSRepositoryMockGetOrdersFromOutboxExpectation) Then(oa1 []mm_domain.OrdersOutbox, err error) *LOMSRepositoryMock {
+	e.results = &LOMSRepositoryMockGetOrdersFromOutboxResults{oa1, err}
+	return e.mock
+}
+
+// GetOrdersFromOutbox implements domain.LOMSRepository
+func (mmGetOrdersFromOutbox *LOMSRepositoryMock) GetOrdersFromOutbox(ctx context.Context) (oa1 []mm_domain.OrdersOutbox, err error) {
+	mm_atomic.AddUint64(&mmGetOrdersFromOutbox.beforeGetOrdersFromOutboxCounter, 1)
+	defer mm_atomic.AddUint64(&mmGetOrdersFromOutbox.afterGetOrdersFromOutboxCounter, 1)
+
+	if mmGetOrdersFromOutbox.inspectFuncGetOrdersFromOutbox != nil {
+		mmGetOrdersFromOutbox.inspectFuncGetOrdersFromOutbox(ctx)
+	}
+
+	mm_params := &LOMSRepositoryMockGetOrdersFromOutboxParams{ctx}
+
+	// Record call args
+	mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.mutex.Lock()
+	mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.callArgs = append(mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.callArgs, mm_params)
+	mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.mutex.Unlock()
+
+	for _, e := range mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.oa1, e.results.err
+		}
+	}
+
+	if mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.defaultExpectation.Counter, 1)
+		mm_want := mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.defaultExpectation.params
+		mm_got := LOMSRepositoryMockGetOrdersFromOutboxParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmGetOrdersFromOutbox.t.Errorf("LOMSRepositoryMock.GetOrdersFromOutbox got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmGetOrdersFromOutbox.GetOrdersFromOutboxMock.defaultExpectation.results
+		if mm_results == nil {
+			mmGetOrdersFromOutbox.t.Fatal("No results are set for the LOMSRepositoryMock.GetOrdersFromOutbox")
+		}
+		return (*mm_results).oa1, (*mm_results).err
+	}
+	if mmGetOrdersFromOutbox.funcGetOrdersFromOutbox != nil {
+		return mmGetOrdersFromOutbox.funcGetOrdersFromOutbox(ctx)
+	}
+	mmGetOrdersFromOutbox.t.Fatalf("Unexpected call to LOMSRepositoryMock.GetOrdersFromOutbox. %v", ctx)
+	return
+}
+
+// GetOrdersFromOutboxAfterCounter returns a count of finished LOMSRepositoryMock.GetOrdersFromOutbox invocations
+func (mmGetOrdersFromOutbox *LOMSRepositoryMock) GetOrdersFromOutboxAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetOrdersFromOutbox.afterGetOrdersFromOutboxCounter)
+}
+
+// GetOrdersFromOutboxBeforeCounter returns a count of LOMSRepositoryMock.GetOrdersFromOutbox invocations
+func (mmGetOrdersFromOutbox *LOMSRepositoryMock) GetOrdersFromOutboxBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetOrdersFromOutbox.beforeGetOrdersFromOutboxCounter)
+}
+
+// Calls returns a list of arguments used in each call to LOMSRepositoryMock.GetOrdersFromOutbox.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmGetOrdersFromOutbox *mLOMSRepositoryMockGetOrdersFromOutbox) Calls() []*LOMSRepositoryMockGetOrdersFromOutboxParams {
+	mmGetOrdersFromOutbox.mutex.RLock()
+
+	argCopy := make([]*LOMSRepositoryMockGetOrdersFromOutboxParams, len(mmGetOrdersFromOutbox.callArgs))
+	copy(argCopy, mmGetOrdersFromOutbox.callArgs)
+
+	mmGetOrdersFromOutbox.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockGetOrdersFromOutboxDone returns true if the count of the GetOrdersFromOutbox invocations corresponds
+// the number of defined expectations
+func (m *LOMSRepositoryMock) MinimockGetOrdersFromOutboxDone() bool {
+	for _, e := range m.GetOrdersFromOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.GetOrdersFromOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterGetOrdersFromOutboxCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcGetOrdersFromOutbox != nil && mm_atomic.LoadUint64(&m.afterGetOrdersFromOutboxCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockGetOrdersFromOutboxInspect logs each unmet expectation
+func (m *LOMSRepositoryMock) MinimockGetOrdersFromOutboxInspect() {
+	for _, e := range m.GetOrdersFromOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.GetOrdersFromOutbox with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.GetOrdersFromOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterGetOrdersFromOutboxCounter) < 1 {
+		if m.GetOrdersFromOutboxMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to LOMSRepositoryMock.GetOrdersFromOutbox")
+		} else {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.GetOrdersFromOutbox with params: %#v", *m.GetOrdersFromOutboxMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcGetOrdersFromOutbox != nil && mm_atomic.LoadUint64(&m.afterGetOrdersFromOutboxCounter) < 1 {
+		m.t.Error("Expected call to LOMSRepositoryMock.GetOrdersFromOutbox")
 	}
 }
 
@@ -1846,6 +2306,223 @@ func (m *LOMSRepositoryMock) MinimockListOrderInspect() {
 	}
 }
 
+type mLOMSRepositoryMockSaveOrderToOutbox struct {
+	mock               *LOMSRepositoryMock
+	defaultExpectation *LOMSRepositoryMockSaveOrderToOutboxExpectation
+	expectations       []*LOMSRepositoryMockSaveOrderToOutboxExpectation
+
+	callArgs []*LOMSRepositoryMockSaveOrderToOutboxParams
+	mutex    sync.RWMutex
+}
+
+// LOMSRepositoryMockSaveOrderToOutboxExpectation specifies expectation struct of the LOMSRepository.SaveOrderToOutbox
+type LOMSRepositoryMockSaveOrderToOutboxExpectation struct {
+	mock    *LOMSRepositoryMock
+	params  *LOMSRepositoryMockSaveOrderToOutboxParams
+	results *LOMSRepositoryMockSaveOrderToOutboxResults
+	Counter uint64
+}
+
+// LOMSRepositoryMockSaveOrderToOutboxParams contains parameters of the LOMSRepository.SaveOrderToOutbox
+type LOMSRepositoryMockSaveOrderToOutboxParams struct {
+	ctx     context.Context
+	orderID mm_domain.OrderID
+	status  string
+}
+
+// LOMSRepositoryMockSaveOrderToOutboxResults contains results of the LOMSRepository.SaveOrderToOutbox
+type LOMSRepositoryMockSaveOrderToOutboxResults struct {
+	err error
+}
+
+// Expect sets up expected params for LOMSRepository.SaveOrderToOutbox
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) Expect(ctx context.Context, orderID mm_domain.OrderID, status string) *mLOMSRepositoryMockSaveOrderToOutbox {
+	if mmSaveOrderToOutbox.mock.funcSaveOrderToOutbox != nil {
+		mmSaveOrderToOutbox.mock.t.Fatalf("LOMSRepositoryMock.SaveOrderToOutbox mock is already set by Set")
+	}
+
+	if mmSaveOrderToOutbox.defaultExpectation == nil {
+		mmSaveOrderToOutbox.defaultExpectation = &LOMSRepositoryMockSaveOrderToOutboxExpectation{}
+	}
+
+	mmSaveOrderToOutbox.defaultExpectation.params = &LOMSRepositoryMockSaveOrderToOutboxParams{ctx, orderID, status}
+	for _, e := range mmSaveOrderToOutbox.expectations {
+		if minimock.Equal(e.params, mmSaveOrderToOutbox.defaultExpectation.params) {
+			mmSaveOrderToOutbox.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSaveOrderToOutbox.defaultExpectation.params)
+		}
+	}
+
+	return mmSaveOrderToOutbox
+}
+
+// Inspect accepts an inspector function that has same arguments as the LOMSRepository.SaveOrderToOutbox
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) Inspect(f func(ctx context.Context, orderID mm_domain.OrderID, status string)) *mLOMSRepositoryMockSaveOrderToOutbox {
+	if mmSaveOrderToOutbox.mock.inspectFuncSaveOrderToOutbox != nil {
+		mmSaveOrderToOutbox.mock.t.Fatalf("Inspect function is already set for LOMSRepositoryMock.SaveOrderToOutbox")
+	}
+
+	mmSaveOrderToOutbox.mock.inspectFuncSaveOrderToOutbox = f
+
+	return mmSaveOrderToOutbox
+}
+
+// Return sets up results that will be returned by LOMSRepository.SaveOrderToOutbox
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) Return(err error) *LOMSRepositoryMock {
+	if mmSaveOrderToOutbox.mock.funcSaveOrderToOutbox != nil {
+		mmSaveOrderToOutbox.mock.t.Fatalf("LOMSRepositoryMock.SaveOrderToOutbox mock is already set by Set")
+	}
+
+	if mmSaveOrderToOutbox.defaultExpectation == nil {
+		mmSaveOrderToOutbox.defaultExpectation = &LOMSRepositoryMockSaveOrderToOutboxExpectation{mock: mmSaveOrderToOutbox.mock}
+	}
+	mmSaveOrderToOutbox.defaultExpectation.results = &LOMSRepositoryMockSaveOrderToOutboxResults{err}
+	return mmSaveOrderToOutbox.mock
+}
+
+// Set uses given function f to mock the LOMSRepository.SaveOrderToOutbox method
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) Set(f func(ctx context.Context, orderID mm_domain.OrderID, status string) (err error)) *LOMSRepositoryMock {
+	if mmSaveOrderToOutbox.defaultExpectation != nil {
+		mmSaveOrderToOutbox.mock.t.Fatalf("Default expectation is already set for the LOMSRepository.SaveOrderToOutbox method")
+	}
+
+	if len(mmSaveOrderToOutbox.expectations) > 0 {
+		mmSaveOrderToOutbox.mock.t.Fatalf("Some expectations are already set for the LOMSRepository.SaveOrderToOutbox method")
+	}
+
+	mmSaveOrderToOutbox.mock.funcSaveOrderToOutbox = f
+	return mmSaveOrderToOutbox.mock
+}
+
+// When sets expectation for the LOMSRepository.SaveOrderToOutbox which will trigger the result defined by the following
+// Then helper
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) When(ctx context.Context, orderID mm_domain.OrderID, status string) *LOMSRepositoryMockSaveOrderToOutboxExpectation {
+	if mmSaveOrderToOutbox.mock.funcSaveOrderToOutbox != nil {
+		mmSaveOrderToOutbox.mock.t.Fatalf("LOMSRepositoryMock.SaveOrderToOutbox mock is already set by Set")
+	}
+
+	expectation := &LOMSRepositoryMockSaveOrderToOutboxExpectation{
+		mock:   mmSaveOrderToOutbox.mock,
+		params: &LOMSRepositoryMockSaveOrderToOutboxParams{ctx, orderID, status},
+	}
+	mmSaveOrderToOutbox.expectations = append(mmSaveOrderToOutbox.expectations, expectation)
+	return expectation
+}
+
+// Then sets up LOMSRepository.SaveOrderToOutbox return parameters for the expectation previously defined by the When method
+func (e *LOMSRepositoryMockSaveOrderToOutboxExpectation) Then(err error) *LOMSRepositoryMock {
+	e.results = &LOMSRepositoryMockSaveOrderToOutboxResults{err}
+	return e.mock
+}
+
+// SaveOrderToOutbox implements domain.LOMSRepository
+func (mmSaveOrderToOutbox *LOMSRepositoryMock) SaveOrderToOutbox(ctx context.Context, orderID mm_domain.OrderID, status string) (err error) {
+	mm_atomic.AddUint64(&mmSaveOrderToOutbox.beforeSaveOrderToOutboxCounter, 1)
+	defer mm_atomic.AddUint64(&mmSaveOrderToOutbox.afterSaveOrderToOutboxCounter, 1)
+
+	if mmSaveOrderToOutbox.inspectFuncSaveOrderToOutbox != nil {
+		mmSaveOrderToOutbox.inspectFuncSaveOrderToOutbox(ctx, orderID, status)
+	}
+
+	mm_params := &LOMSRepositoryMockSaveOrderToOutboxParams{ctx, orderID, status}
+
+	// Record call args
+	mmSaveOrderToOutbox.SaveOrderToOutboxMock.mutex.Lock()
+	mmSaveOrderToOutbox.SaveOrderToOutboxMock.callArgs = append(mmSaveOrderToOutbox.SaveOrderToOutboxMock.callArgs, mm_params)
+	mmSaveOrderToOutbox.SaveOrderToOutboxMock.mutex.Unlock()
+
+	for _, e := range mmSaveOrderToOutbox.SaveOrderToOutboxMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSaveOrderToOutbox.SaveOrderToOutboxMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSaveOrderToOutbox.SaveOrderToOutboxMock.defaultExpectation.Counter, 1)
+		mm_want := mmSaveOrderToOutbox.SaveOrderToOutboxMock.defaultExpectation.params
+		mm_got := LOMSRepositoryMockSaveOrderToOutboxParams{ctx, orderID, status}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSaveOrderToOutbox.t.Errorf("LOMSRepositoryMock.SaveOrderToOutbox got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSaveOrderToOutbox.SaveOrderToOutboxMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSaveOrderToOutbox.t.Fatal("No results are set for the LOMSRepositoryMock.SaveOrderToOutbox")
+		}
+		return (*mm_results).err
+	}
+	if mmSaveOrderToOutbox.funcSaveOrderToOutbox != nil {
+		return mmSaveOrderToOutbox.funcSaveOrderToOutbox(ctx, orderID, status)
+	}
+	mmSaveOrderToOutbox.t.Fatalf("Unexpected call to LOMSRepositoryMock.SaveOrderToOutbox. %v %v %v", ctx, orderID, status)
+	return
+}
+
+// SaveOrderToOutboxAfterCounter returns a count of finished LOMSRepositoryMock.SaveOrderToOutbox invocations
+func (mmSaveOrderToOutbox *LOMSRepositoryMock) SaveOrderToOutboxAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSaveOrderToOutbox.afterSaveOrderToOutboxCounter)
+}
+
+// SaveOrderToOutboxBeforeCounter returns a count of LOMSRepositoryMock.SaveOrderToOutbox invocations
+func (mmSaveOrderToOutbox *LOMSRepositoryMock) SaveOrderToOutboxBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSaveOrderToOutbox.beforeSaveOrderToOutboxCounter)
+}
+
+// Calls returns a list of arguments used in each call to LOMSRepositoryMock.SaveOrderToOutbox.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSaveOrderToOutbox *mLOMSRepositoryMockSaveOrderToOutbox) Calls() []*LOMSRepositoryMockSaveOrderToOutboxParams {
+	mmSaveOrderToOutbox.mutex.RLock()
+
+	argCopy := make([]*LOMSRepositoryMockSaveOrderToOutboxParams, len(mmSaveOrderToOutbox.callArgs))
+	copy(argCopy, mmSaveOrderToOutbox.callArgs)
+
+	mmSaveOrderToOutbox.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSaveOrderToOutboxDone returns true if the count of the SaveOrderToOutbox invocations corresponds
+// the number of defined expectations
+func (m *LOMSRepositoryMock) MinimockSaveOrderToOutboxDone() bool {
+	for _, e := range m.SaveOrderToOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SaveOrderToOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSaveOrderToOutboxCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSaveOrderToOutbox != nil && mm_atomic.LoadUint64(&m.afterSaveOrderToOutboxCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSaveOrderToOutboxInspect logs each unmet expectation
+func (m *LOMSRepositoryMock) MinimockSaveOrderToOutboxInspect() {
+	for _, e := range m.SaveOrderToOutboxMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.SaveOrderToOutbox with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SaveOrderToOutboxMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSaveOrderToOutboxCounter) < 1 {
+		if m.SaveOrderToOutboxMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to LOMSRepositoryMock.SaveOrderToOutbox")
+		} else {
+			m.t.Errorf("Expected call to LOMSRepositoryMock.SaveOrderToOutbox with params: %#v", *m.SaveOrderToOutboxMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSaveOrderToOutbox != nil && mm_atomic.LoadUint64(&m.afterSaveOrderToOutboxCounter) < 1 {
+		m.t.Error("Expected call to LOMSRepositoryMock.SaveOrderToOutbox")
+	}
+}
+
 type mLOMSRepositoryMockStocks struct {
 	mock               *LOMSRepositoryMock
 	defaultExpectation *LOMSRepositoryMockStocksExpectation
@@ -2074,13 +2751,19 @@ func (m *LOMSRepositoryMock) MinimockFinish() {
 
 		m.MinimockCreateReserveInspect()
 
+		m.MinimockDeleteOrderFromOutboxInspect()
+
 		m.MinimockDeleteReserveInspect()
 
 		m.MinimockGetOldOrdersInspect()
 
+		m.MinimockGetOrdersFromOutboxInspect()
+
 		m.MinimockGetStatusInspect()
 
 		m.MinimockListOrderInspect()
+
+		m.MinimockSaveOrderToOutboxInspect()
 
 		m.MinimockStocksInspect()
 		m.t.FailNow()
@@ -2110,9 +2793,12 @@ func (m *LOMSRepositoryMock) minimockDone() bool {
 		m.MinimockChangeStatusDone() &&
 		m.MinimockCreateOrderDone() &&
 		m.MinimockCreateReserveDone() &&
+		m.MinimockDeleteOrderFromOutboxDone() &&
 		m.MinimockDeleteReserveDone() &&
 		m.MinimockGetOldOrdersDone() &&
+		m.MinimockGetOrdersFromOutboxDone() &&
 		m.MinimockGetStatusDone() &&
 		m.MinimockListOrderDone() &&
+		m.MinimockSaveOrderToOutboxDone() &&
 		m.MinimockStocksDone()
 }

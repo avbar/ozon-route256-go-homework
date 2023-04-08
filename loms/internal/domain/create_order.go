@@ -9,15 +9,19 @@ func (m *Model) CreateOrder(ctx context.Context, user int64, items []OrderItem) 
 	if err != nil {
 		return 0, err
 	}
+	err = m.lomsRepository.SaveOrderToOutbox(ctx, orderID, OrderStatusNew)
+	if err != nil {
+		return 0, err
+	}
 
 	err = m.transactionManager.RunRepeatableRead(ctx, func(ctxTX context.Context) error {
 		return m.lomsRepository.CreateReserve(ctx, orderID, items)
 	})
 
 	if err != nil {
-		err = m.lomsRepository.ChangeStatus(ctx, orderID, OrderStatusFailed)
+		err = m.ChangeStatus(ctx, orderID, OrderStatusFailed)
 	} else {
-		err = m.lomsRepository.ChangeStatus(ctx, orderID, OrderStatusAwaitingPayment)
+		err = m.ChangeStatus(ctx, orderID, OrderStatusAwaitingPayment)
 	}
 
 	return orderID, err

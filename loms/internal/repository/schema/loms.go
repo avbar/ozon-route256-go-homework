@@ -28,3 +28,9 @@ type Reserve struct {
 	OrderID     int64  `db:"order_id"`
 	Count       uint64 `db:"count"`
 }
+
+type OrdersOutbox struct {
+	OrderID   int64     `db:"order_id"`
+	Status    string    `db:"status"`
+	CreatedAt time.Time `db:"created_at"`
+}
