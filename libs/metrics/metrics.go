@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -20,6 +21,11 @@ var (
 	},
 		[]string{"handler"},
 	)
+	ErrorsCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "route256",
+		Subsystem: "grpc",
+		Name:      "errors_total",
+	})
 	HistogramResponseTime = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "route256",
 		Subsystem: "grpc",
@@ -57,8 +63,12 @@ func MetricsInterceptor(ctx context.Context, req interface{}, info *grpc.UnarySe
 	res, err := handler(ctx, req)
 	elapsedTime := time.Since(timeStart)
 
-	status := status.Convert(err).Code().String()
-	HistogramResponseTime.WithLabelValues(status, info.FullMethod).Observe(elapsedTime.Seconds())
+	status := status.Convert(err).Code()
+	if status != codes.OK {
+		ErrorsCounter.Inc()
+	}
+
+	HistogramResponseTime.WithLabelValues(status.String(), info.FullMethod).Observe(elapsedTime.Seconds())
 
 	return res, err
 }

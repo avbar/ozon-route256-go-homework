@@ -5,7 +5,15 @@ groups:
     expr: up == 0
     for: 30s
     labels:
-      severity: medium
+      severity: critical
     annotations:
       summary: "The target {{ $labels.job }} is down"
-      description: "Instance {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 30 seconds."
+      description: "Instance {{ $labels.instance }} of service {{ $labels.job }} has been down for more than 30 seconds."
+  - alert: HighNumberOfErrors
+    expr: rate(route256_grpc_errors_total[10s]) > 1
+    for: 10s
+    labels:
+      severity: medium
+    annotations:
+      summary: "The target {{ $labels.job }} has many erros"
+      description: "Instance {{ $labels.instance }} of service {{ $labels.job }} has high number of errors."

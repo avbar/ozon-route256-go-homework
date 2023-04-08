@@ -274,3 +274,14 @@ services:
       - prometheus
     networks:
       - net
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - 9094:9093
+    volumes:
+      - ./libs/metrics/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    depends_on:
+      - prometheus
+    networks:
+      - net
