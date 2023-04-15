@@ -9,6 +9,7 @@ import (
 
 type ConfigStruct struct {
 	GRPCPort    int      `yaml:"grpc_port"`
+	HTTPPort    int      `yaml:"http_port"`
 	DatabaseURL string   `yaml:"database_url"`
 	Brokers     []string `yaml:"brokers"`
 }

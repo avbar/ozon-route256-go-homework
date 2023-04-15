@@ -2,12 +2,14 @@ package loms
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	desc "route256/loms/pkg/loms_v1"
+
+	"go.uber.org/zap"
 )
 
 func (i *Implementation) Stocks(ctx context.Context, req *desc.StocksRequest) (*desc.StocksResponse, error) {
-	log.Printf("stocks: %+v", req)
+	logger.Info("stocks", zap.Any("request", req))
 
 	stocks, err := i.businessLogic.Stocks(ctx, req.GetSku())
 	if err != nil {

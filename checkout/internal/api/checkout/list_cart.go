@@ -2,12 +2,14 @@ package checkout
 
 import (
 	"context"
-	"log"
 	desc "route256/checkout/pkg/checkout_v1"
+	"route256/libs/logger"
+
+	"go.uber.org/zap"
 )
 
 func (i *Implementation) ListCart(ctx context.Context, req *desc.ListCartRequest) (*desc.ListCartResponse, error) {
-	log.Printf("listCart: %+v", req)
+	logger.Info("listCart", zap.Any("request", req))
 
 	cart, err := i.businessLogic.ListCart(ctx, req.GetUser())
 	if err != nil {

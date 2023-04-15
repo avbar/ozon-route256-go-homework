@@ -14,6 +14,7 @@ type ConfigStruct struct {
 		ProductService string `yaml:"productservice"`
 	} `yaml:"services"`
 	GRPCPort    int    `yaml:"grpc_port"`
+	HTTPPort    int    `yaml:"http_port"`
 	DatabaseURL string `yaml:"database_url"`
 }
 

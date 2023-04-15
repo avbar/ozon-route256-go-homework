@@ -8,7 +8,8 @@ import (
 )
 
 type ConfigStruct struct {
-	Brokers []string `yaml:"brokers"`
+	HTTPPort int      `yaml:"http_port"`
+	Brokers  []string `yaml:"brokers"`
 }
 
 var ConfigData ConfigStruct
