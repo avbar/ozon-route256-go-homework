@@ -3,3 +3,4 @@
 /vendor-proto
 /pgdata
 /coverage.out
+/cmd/cachetest

@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect to ProductService server", zap.Error(err))
 	}
-	defer connLOMS.Close()
+	defer connProduct.Close()
 
 	lomsClient := loms.NewClient(connLOMS)
 	productClient := productservice.NewClient(connProduct)
