@@ -117,8 +117,8 @@ services:
     - ZOOKEEPER_SYNC_LIMIT=2
     - ZOOKEEPER_SERVERS=zookeeper:2888:3888
     volumes:
-      - ./kafka/kafkadata/zoo/data:/var/lib/zookeeper/data
-      - ./kafka/kafkadata/zoo/log:/var/lib/zookeeper/log
+      - ./libs/kafka/kafkadata/zoo/data:/var/lib/zookeeper/data
+      - ./libs/kafka/kafkadata/zoo/log:/var/lib/zookeeper/log
     networks:
       - net
 
@@ -139,7 +139,7 @@ services:
     - KAFKA_BROKER_ID=1
     - ZOOKEEPER=zookeeper:2181
     volumes:
-      - ./kafka/kafkadata/kafka1/data:/var/lib/kafka/data
+      - ./libs/kafka/kafkadata/kafka1/data:/var/lib/kafka/data
     networks:
       - net
     restart: on-failure
@@ -161,7 +161,7 @@ services:
     - KAFKA_BROKER_ID=2
     - ZOOKEEPER=zookeeper:2181
     volumes:
-      - ./kafka/kafkadata/kafka2/data:/var/lib/kafka/data
+      - ./libs/kafka/kafkadata/kafka2/data:/var/lib/kafka/data
     networks:
       - net
     restart: on-failure
@@ -183,7 +183,7 @@ services:
     - KAFKA_BROKER_ID=3
     - ZOOKEEPER=zookeeper:2181
     volumes:
-      - ./kafka/kafkadata/kafka3/data:/var/lib/kafka/data
+      - ./libs/kafka/kafkadata/kafka3/data:/var/lib/kafka/data
     networks:
       - net
     restart: on-failure
