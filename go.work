@@ -2,7 +2,6 @@ go 1.19
 
 use (
 	./checkout
-	./kafka
 	./libs
 	./loms
 	./notifications

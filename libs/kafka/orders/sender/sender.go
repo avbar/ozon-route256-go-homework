@@ -3,7 +3,7 @@ package sender
 import (
 	"context"
 	"fmt"
-	"route256/kafka/pkg/order"
+	"route256/libs/kafka/pkg/order"
 	"route256/libs/logger"
 	"time"
 

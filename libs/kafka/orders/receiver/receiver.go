@@ -1,7 +1,7 @@
 package receiver
 
 import (
-	"route256/kafka/pkg/order"
+	"route256/libs/kafka/pkg/order"
 	"route256/libs/logger"
 
 	"github.com/Shopify/sarama"

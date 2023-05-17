@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto.order;
 
-option go_package = "route256/kafka/pkg/proto/order";
+option go_package = "route256/libs/kafka/pkg/order";
 
 message Order {
     int64 order_id = 1;
